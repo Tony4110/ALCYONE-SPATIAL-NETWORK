@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alcyone Network — La couche d'intelligence de l'économie spatiale</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#080A0F;
+    --ink-2:#0C0F16;
+    --panel:#0F131C;
+    --panel-2:#131826;
+    --line:#1E2533;
+    --line-2:#2A3346;
+    --text:#E9ECF3;
+    --muted:#8B93A6;
+    --faint:#5C6478;
+    --star:#9FC4FF;        /* Alcyone — hot blue-white star */
+    --accent:#6FA8FF;
+    --accent-soft:rgba(111,168,255,.12);
+    --gold:#E8B65A;
+    --up:#3DD68C;
+    --down:#FF6B6B;
+    --sans:'Hanken Grotesk',sans-serif;
+    --serif:'Fraunces',Georgia,serif;
+    --mono:'IBM Plex Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--ink);
+    color:var(--text);
+    font-family:var(--sans);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    position:relative;
+    overflow-x:hidden;
+  }
+  /* starfield + grid atmosphere */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(1px 1px at 12% 22%, rgba(159,196,255,.7), transparent),
+      radial-gradient(1px 1px at 78% 14%, rgba(159,196,255,.5), transparent),
+      radial-gradient(1.4px 1.4px at 35% 65%, rgba(255,255,255,.6), transparent),
+      radial-gradient(1px 1px at 62% 78%, rgba(159,196,255,.45), transparent),
+      radial-gradient(1px 1px at 88% 52%, rgba(255,255,255,.4), transparent),
+      radial-gradient(1px 1px at 22% 88%, rgba(159,196,255,.5), transparent),
+      radial-gradient(1.2px 1.2px at 50% 30%, rgba(255,255,255,.5), transparent);
+    opacity:.55;
+  }
+  body::after{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      linear-gradient(var(--line) 1px,transparent 1px),
+      linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:64px 64px;
+    -webkit-mask-image:radial-gradient(ellipse 90% 60% at 50% 0%, #000 0%, transparent 75%);
+            mask-image:radial-gradient(ellipse 90% 60% at 50% 0%, #000 0%, transparent 75%);
+    opacity:.5;
+  }
+  .wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:0 28px}
+
+  /* ---------- NAV ---------- */
+  nav{
+    position:sticky;top:0;z-index:50;
+    backdrop-filter:blur(14px);
+    background:rgba(8,10,15,.72);
+    border-bottom:1px solid var(--line);
+  }
+  .nav-inner{display:flex;align-items:center;gap:30px;height:64px;max-width:1180px;margin:0 auto;padding:0 28px}
+  .brand{display:flex;align-items:center;gap:11px;cursor:pointer;flex-shrink:0}
+  .star-mark{width:22px;height:22px;position:relative;flex-shrink:0}
+  .star-mark::before,.star-mark::after{content:"";position:absolute;inset:0;background:
+    radial-gradient(circle at center, var(--star) 0%, transparent 60%);
+    border-radius:50%;}
+  .star-mark span{position:absolute;top:50%;left:50%;width:2px;height:22px;background:linear-gradient(var(--star),transparent 80%);transform:translate(-50%,-50%);box-shadow:0 0 8px var(--star)}
+  .star-mark span:nth-child(2){transform:translate(-50%,-50%) rotate(90deg)}
+  .brand b{font-family:var(--serif);font-weight:500;font-size:18px;letter-spacing:.2px}
+  .brand small{color:var(--faint);font-family:var(--mono);font-size:10px;letter-spacing:.5px;display:block;margin-top:-3px}
+  .nav-links{display:flex;gap:6px;margin-left:auto}
+  .nav-links a{
+    color:var(--muted);text-decoration:none;font-size:13.5px;font-weight:500;
+    padding:8px 14px;border-radius:8px;cursor:pointer;transition:.18s;
+  }
+  .nav-links a:hover{color:var(--text);background:var(--panel)}
+  .nav-links a.active{color:var(--text);background:var(--accent-soft)}
+  .btn{
+    font-family:var(--sans);font-weight:600;font-size:13.5px;cursor:pointer;
+    border:none;border-radius:9px;padding:10px 18px;transition:.18s;text-decoration:none;display:inline-block;
+  }
+  .btn-primary{background:var(--accent);color:#06131f;box-shadow:0 0 0 1px rgba(111,168,255,.4),0 8px 24px -8px rgba(111,168,255,.6)}
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 0 0 1px rgba(111,168,255,.6),0 12px 30px -8px rgba(111,168,255,.7)}
+  .btn-ghost{background:transparent;color:var(--text);border:1px solid var(--line-2)}
+  .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* ---------- VIEWS ---------- */
+  .view{display:none;animation:fade .5s ease both}
+  .view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .stagger>*{opacity:0;animation:rise .6s ease forwards}
+  @keyframes rise{to{opacity:1;transform:none}}
+  .stagger>*{transform:translateY(14px)}
+  .stagger>*:nth-child(1){animation-delay:.05s}
+  .stagger>*:nth-child(2){animation-delay:.13s}
+  .stagger>*:nth-child(3){animation-delay:.21s}
+  .stagger>*:nth-child(4){animation-delay:.29s}
+  .stagger>*:nth-child(5){animation-delay:.37s}
+
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent)}
+  .section-title{font-family:var(--serif);font-weight:500;font-size:clamp(26px,3.4vw,40px);line-height:1.1;letter-spacing:-.5px}
+  .lead{color:var(--muted);font-size:16px;max-width:560px}
+
+  /* ---------- HERO ---------- */
+  .hero{padding:96px 0 80px;text-align:center}
+  .hero h1{font-family:var(--serif);font-weight:500;font-size:clamp(40px,6.4vw,76px);line-height:1.02;letter-spacing:-1.5px;margin:22px auto 0;max-width:880px}
+  .hero h1 em{font-style:italic;color:var(--star)}
+  .hero .lead{margin:24px auto 0;font-size:18px}
+  .hero-cta{display:flex;gap:14px;justify-content:center;margin-top:38px;flex-wrap:wrap}
+  .ticker{margin-top:54px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:14px 0;overflow:hidden;white-space:nowrap;mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+  .ticker span{font-family:var(--mono);font-size:12.5px;color:var(--muted);padding:0 26px;display:inline-block;animation:scroll 38s linear infinite}
+  .ticker b{color:var(--up)}.ticker i{color:var(--gold);font-style:normal}
+  @keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+  /* ---------- PILLARS ---------- */
+  .block{padding:72px 0;border-top:1px solid var(--line)}
+  .pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:36px;position:relative}
+  .pillar{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:26px}
+  .pillar .ic{font-size:26px}
+  .pillar h3{font-family:var(--serif);font-weight:500;font-size:21px;margin:14px 0 4px}
+  .pillar .tag{font-family:var(--mono);font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent)}
+  .pillar p{color:var(--muted);font-size:14px;margin-top:10px}
+  .chain{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:30px;flex-wrap:wrap;font-family:var(--mono);font-size:12.5px;letter-spacing:1px;color:var(--faint)}
+  .chain b{color:var(--text)}.chain .arrow{color:var(--accent)}
+  .chain .end{color:var(--gold)}
+
+  .gets{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 30px;margin-top:34px}
+  .get{display:flex;gap:12px;align-items:flex-start;font-size:15px}
+  .get .ck{color:var(--accent);font-weight:700;margin-top:1px}
+
+  /* ---------- DASHBOARD ---------- */
+  .page-head{padding:54px 0 8px}
+  .page-head h2{font-family:var(--serif);font-weight:500;font-size:34px;letter-spacing:-.5px}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+  .cards4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:26px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+  .stat .label{font-family:var(--mono);font-size:11px;letter-spacing:.5px;color:var(--muted);text-transform:uppercase}
+  .stat .val{font-family:var(--serif);font-weight:500;font-size:34px;margin-top:8px;letter-spacing:-1px}
+  .stat .trend{font-family:var(--mono);font-size:12px;margin-top:2px}
+  .up{color:var(--up)}.down{color:var(--down)}
+  .stat .ai{margin-top:14px;padding-top:13px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);display:flex;gap:8px;line-height:1.45}
+  .stat .ai .spark{color:var(--accent);flex-shrink:0;font-family:var(--mono)}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px;margin-top:18px}
+  .panel-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .panel-h h3{font-family:var(--serif);font-weight:500;font-size:20px}
+  .panel-h .pill{font-family:var(--mono);font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--accent);border:1px solid var(--line-2);border-radius:20px;padding:4px 11px}
+  table{width:100%;border-collapse:collapse}
+  th{font-family:var(--mono);font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--faint);text-align:left;padding:0 0 12px;font-weight:500}
+  td{padding:14px 0;border-top:1px solid var(--line);font-size:14.5px;vertical-align:middle}
+  td .op{font-weight:600}
+  .badge{font-family:var(--mono);font-size:11px;padding:3px 9px;border-radius:6px;letter-spacing:.4px}
+  .b-exp{background:rgba(61,214,140,.13);color:var(--up)}
+  .b-stable{background:rgba(232,182,90,.13);color:var(--gold)}
+  .b-cons{background:rgba(255,107,107,.12);color:var(--down)}
+  .dot{display:inline-block;width:60px;height:5px;border-radius:3px;background:var(--line-2);position:relative;vertical-align:middle}
+  .dot i{position:absolute;left:0;top:0;height:100%;border-radius:3px;background:var(--accent)}
+
+  .two{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;margin-top:18px}
+  .launch-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-top:1px solid var(--line);font-size:14px}
+  .launch-row:first-of-type{border-top:none}
+  .launch-row .mono{font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .orbit{display:flex;gap:10px;margin-bottom:14px}
+  .orbit div{flex:1;text-align:center;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:12px 6px}
+  .orbit b{font-family:var(--serif);font-size:20px;display:block}
+  .orbit small{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:1px}
+  .ai-summary{font-size:13.5px;color:var(--muted);line-height:1.6;background:var(--accent-soft);border:1px solid rgba(111,168,255,.2);border-radius:10px;padding:14px 16px}
+  .ai-summary b{color:var(--accent);font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:6px}
+
+  /* ---------- INSIGHTS ---------- */
+  .ins-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:26px}
+  .insight{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px;transition:.2s}
+  .insight:hover{border-color:var(--line-2);transform:translateY(-2px)}
+  .insight .num{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:1px}
+  .insight h3{font-family:var(--serif);font-weight:500;font-size:21px;line-height:1.25;margin:8px 0 12px}
+  .insight .sum{font-size:14px;color:var(--muted);line-height:1.6}
+  .meta{margin-top:16px;display:grid;gap:10px}
+  .meta div{font-size:13px}
+  .meta .k{font-family:var(--mono);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--faint);margin-bottom:2px}
+  .meta .why{color:var(--text)}
+  .meta .win{color:var(--up)}
+  .meta .risk{color:var(--down)}
+
+  /* ---------- REPORTS ---------- */
+  .rep-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:26px}
+  .report{background:linear-gradient(160deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:18px;padding:30px;position:relative;overflow:hidden}
+  .report::before{content:"";position:absolute;top:-40px;right:-40px;width:140px;height:140px;background:radial-gradient(circle,var(--accent-soft),transparent 70%);border-radius:50%}
+  .report .price{font-family:var(--mono);font-size:12px;color:var(--gold);letter-spacing:1px}
+  .report h3{font-family:var(--serif);font-weight:500;font-size:25px;margin:10px 0 16px}
+  .report ul{list-style:none;margin:0 0 22px}
+  .report li{font-size:14px;color:var(--muted);padding:8px 0;border-top:1px solid var(--line);display:flex;gap:10px}
+  .report li::before{content:"›";color:var(--accent)}
+
+  footer{border-top:1px solid var(--line);margin-top:80px;padding:40px 0;color:var(--faint);font-size:13px}
+  .foot-inner{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
+  .domains{font-family:var(--mono);font-size:12px;display:flex;gap:18px;flex-wrap:wrap}
+  .domains span{color:var(--muted)}.domains b{color:var(--accent);font-weight:400}
+
+  @media(max-width:880px){
+    .pillars,.cards4,.gets,.two,.ins-grid,.rep-grid{grid-template-columns:1fr}
+    .nav-links{display:none}
+    .hero{padding:64px 0 56px}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="brand" onclick="show('landing')">
+      <div class="star-mark"><span></span><span></span></div>
+      <div><b>Alcyone</b><small>INTELLIGENCE SPATIALE</small></div>
+    </div>
+    <div class="nav-links">
+      <a data-v="landing" class="active" onclick="show('landing')">Vue d'ensemble</a>
+      <a data-v="dashboard" onclick="show('dashboard')">Tableau de bord</a>
+      <a data-v="insights" onclick="show('insights')">Insights IA</a>
+      <a data-v="reports" onclick="show('reports')">Rapports</a>
+    </div>
+    <button class="btn btn-primary" onclick="show('dashboard')">Explorer l'intelligence</button>
+  </div>
+</nav>
+
+<!-- ============ LANDING ============ -->
+<section class="view active" id="landing">
+  <div class="wrap hero stagger">
+    <div class="eyebrow">Intelligence infrastructure pour l'économie spatiale</div>
+    <h1>Comprendre l'économie spatiale en <em>3 minutes</em></h1>
+    <p class="lead">Alcyone Network transforme les signaux fragmentés de l'industrie spatiale en intelligence claire et actionnable — ce qui se passe, pourquoi c'est important, et où les opportunités émergent.</p>
+    <div class="hero-cta">
+      <button class="btn btn-primary" onclick="show('dashboard')">Explorer l'intelligence</button>
+      <button class="btn btn-ghost" onclick="show('insights')">Voir les derniers insights</button>
+    </div>
+  </div>
+  <div class="ticker">
+    <span>FLUX DE SIGNAUX &nbsp;·&nbsp; Satellites actifs en LEO <b>▲ 11 240</b> &nbsp;·&nbsp; Cadence de lancement T2 <b>▲ +14 %</b> &nbsp;·&nbsp; Déploiement Kuiper <i>en accélération</i> &nbsp;·&nbsp; Demande connectivité maritime <b>▲</b> &nbsp;·&nbsp; Intégration OneWeb–Eutelsat <i>en cours</i> &nbsp;·&nbsp; Satellites actifs en LEO <b>▲ 11 240</b> &nbsp;·&nbsp; Cadence de lancement T2 <b>▲ +14 %</b> &nbsp;·&nbsp; Déploiement Kuiper <i>en accélération</i> &nbsp;·&nbsp; Demande connectivité maritime <b>▲</b> &nbsp;·&nbsp; Intégration OneWeb–Eutelsat <i>en cours</i> &nbsp;·&nbsp;</span>
+  </div>
+
+  <div class="wrap block">
+    <div class="eyebrow">Le récit</div>
+    <h2 class="section-title" style="margin-top:14px">Trois piliers. Une seule histoire.</h2>
+    <p class="lead" style="margin-top:14px">L'espace n'est pas 20 catégories déconnectées. C'est une chaîne unique — une infrastructure qui devient essentielle à l'économie mondiale.</p>
+    <div class="pillars">
+      <div class="pillar"><div class="ic">🛰️</div><div class="tag" style="margin-top:10px">Infrastructure</div><h3>Constellations</h3><p>Qui construit le réseau orbital — et à quelle vitesse il se développe.</p></div>
+      <div class="pillar"><div class="ic">🚀</div><div class="tag" style="margin-top:10px">Logistique</div><h3>Lancements</h3><p>Comment davantage de capacité est déployée, et ce que la cadence révèle de l'avenir.</p></div>
+      <div class="pillar"><div class="ic">🌐</div><div class="tag" style="margin-top:10px">Usage</div><h3>Connectivité</h3><p>Comment cette infrastructure atteint le monde réel — le pont vers l'économie terrestre.</p></div>
+    </div>
+    <div class="chain">
+      <b>Constellations</b> <span class="arrow">→</span> <b>Lancements</b> <span class="arrow">→</span> <b>Connectivité</b> <span class="arrow">→</span> <span class="end">Économie réelle</span>
+    </div>
+  </div>
+
+  <div class="wrap block">
+    <div class="eyebrow">Ce que vous obtenez</div>
+    <div class="gets">
+      <div class="get"><span class="ck">✓</span> Vue d'ensemble du secteur</div>
+      <div class="get"><span class="ck">✓</span> Tendances des lancements</div>
+      <div class="get"><span class="ck">✓</span> Intelligence constellations</div>
+      <div class="get"><span class="ck">✓</span> Signaux d'infrastructure de connectivité</div>
+      <div class="get"><span class="ck">✓</span> Insights générés par l'IA</div>
+      <div class="get"><span class="ck">✓</span> Opportunités de marché</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DASHBOARD ============ -->
+<section class="view" id="dashboard">
+  <div class="wrap">
+    <div class="page-head">
+      <div class="kicker">En direct · Données illustratives</div>
+      <h2>Tableau de bord de l'économie spatiale</h2>
+    </div>
+
+    <div class="cards4 stagger">
+      <div class="stat">
+        <div class="label">Satellites actifs</div>
+        <div class="val">11 240</div>
+        <div class="trend up">▲ +6,2 % / 90 j</div>
+        <div class="ai"><span class="spark">IA</span> La croissance est portée presque entièrement par le haut débit en LEO — la capacité, pas le nombre, est le vrai enjeu.</div>
+      </div>
+      <div class="stat">
+        <div class="label">Constellations actives</div>
+        <div class="val">38</div>
+        <div class="trend up">▲ +3 / an</div>
+        <div class="ai"><span class="spark">IA</span> Les nouveaux entrants sont régionaux ; le marché se consolide autour de quatre opérateurs mondiaux.</div>
+      </div>
+      <div class="stat">
+        <div class="label">Lancements · 90 jours</div>
+        <div class="val">62</div>
+        <div class="trend up">▲ +14 %</div>
+        <div class="ai"><span class="spark">IA</span> La cadence à la hausse signale une capacité de connectivité future en croissance.</div>
+      </div>
+      <div class="stat">
+        <div class="label">Croissance du secteur</div>
+        <div class="val">+18 %</div>
+        <div class="trend up">▲ CA annuel</div>
+        <div class="ai"><span class="spark">IA</span> Les services de connectivité dépassent désormais le matériel comme moteur de croissance du secteur.</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><h3>Moniteur des constellations</h3><span class="pill">Pilier 01 · Infrastructure</span></div>
+      <table>
+        <tr><th>Opérateur</th><th>Statut de croissance</th><th>Phase de déploiement</th><th>Position sur le marché</th></tr>
+        <tr><td class="op">Starlink</td><td><span class="badge b-exp">Expansion</span></td><td>Montée en charge · v2 mini</td><td><span class="dot"><i style="width:92%"></i></span> Dominant</td></tr>
+        <tr><td class="op">Amazon Kuiper</td><td><span class="badge b-exp">Expansion</span></td><td>Déploiement initial</td><td><span class="dot"><i style="width:34%"></i></span> Émergent</td></tr>
+        <tr><td class="op">OneWeb</td><td><span class="badge b-stable">Stable</span></td><td>Génération 1 complète</td><td><span class="dot"><i style="width:58%"></i></span> Entreprises / État</td></tr>
+        <tr><td class="op">Eutelsat</td><td><span class="badge b-cons">Consolidation</span></td><td>Hybride GEO + LEO</td><td><span class="dot"><i style="width:50%"></i></span> Acteur établi</td></tr>
+      </table>
+    </div>
+
+    <div class="two">
+      <div class="panel">
+        <div class="panel-h"><h3>Marché des lancements</h3><span class="pill">Pilier 02 · Logistique</span></div>
+        <div class="launch-row"><span><b>Falcon 9</b> · Starlink G7-22</span><span class="mono up">RÉCENT · il y a 02 j</span></div>
+        <div class="launch-row"><span><b>Falcon 9</b> · Kuiper KA-03</span><span class="mono up">RÉCENT · il y a 06 j</span></div>
+        <div class="launch-row"><span><b>Ariane 6</b> · Multi-payload</span><span class="mono">À VENIR · ~9 j</span></div>
+        <div class="launch-row"><span><b>New Glenn</b> · Lot Kuiper</span><span class="mono">À VENIR · ~21 j</span></div>
+        <div class="ai-summary" style="margin-top:16px"><b>IA · Lecture de la cadence</b>La fréquence de lancement est en hausse de 14 % trimestre sur trimestre et de plus en plus concentrée chez 3 fournisseurs — signe d'une capacité de déploiement croissante, mais aussi d'un risque de dépendance côté offre.</div>
+      </div>
+      <div class="panel">
+        <div class="panel-h"><h3>Connectivité spatiale</h3><span class="pill">Pilier 03 · Usage</span></div>
+        <div class="orbit">
+          <div><b>LEO</b><small>EN EXPANSION</small></div>
+          <div><b>MEO</b><small>STABLE</small></div>
+          <div><b>GEO</b><small>MATURE</small></div>
+        </div>
+        <div class="ai-summary"><b>IA · Ce qui change</b>Le haut débit en LEO passe du statut de nouveauté à celui d'infrastructure critique — réduisant le coût par Mbps et ouvrant les marchés maritime, isolé et entreprise que la fibre n'a jamais atteints.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ AI INSIGHTS ============ -->
+<section class="view" id="insights">
+  <div class="wrap">
+    <div class="page-head">
+      <div class="kicker">La valeur centrale</div>
+      <h2>Insights IA</h2>
+      <p class="lead" style="margin-top:12px">Pas des statistiques — de l'interprétation. Ce que signifient les signaux, qui gagne, et ce qui pourrait basculer.</p>
+    </div>
+    <div class="ins-grid stagger">
+      <div class="insight">
+        <div class="num">INSIGHT 01</div>
+        <h3>La connectivité satellite devient une infrastructure critique</h3>
+        <div class="sum">La connectivité commerciale en LEO passe du statut de nouveauté grand public à celui de couche fondatrice de la résilience nationale et d'entreprise.</div>
+        <div class="meta">
+          <div><div class="k">Pourquoi c'est important</div><div class="why">Les budgets de résilience, pas l'ARPU grand public, deviennent le moteur de la demande — un marché plus large et plus fidèle.</div></div>
+          <div><div class="k">Gagnants potentiels</div><div class="win">Opérateurs LEO avec canaux entreprise/État · fournisseurs du segment sol</div></div>
+          <div><div class="k">Risques potentiels</div><div class="risk">Réticence réglementaire · dépendance à un opérateur unique dans les systèmes critiques</div></div>
+        </div>
+      </div>
+      <div class="insight">
+        <div class="num">INSIGHT 02</div>
+        <h3>La capacité de lancement se concentre chez quelques fournisseurs</h3>
+        <div class="sum">Un petit nombre d'opérateurs de lancement dominants gère désormais la majorité de la masse déployée — une caractéristique structurelle, pas temporaire.</div>
+        <div class="meta">
+          <div><div class="k">Pourquoi c'est important</div><div class="why">Le pouvoir de fixation des prix et les délais de déploiement de tout le secteur dépendent de quelques acteurs.</div></div>
+          <div><div class="k">Gagnants potentiels</div><div class="win">Opérateurs intégrés verticalement · challengers du lancement réutilisable</div></div>
+          <div><div class="k">Risques potentiels</div><div class="risk">Risque de goulot d'étranglement · retards en cascade d'un seul fournisseur</div></div>
+        </div>
+      </div>
+      <div class="insight">
+        <div class="num">INSIGHT 03</div>
+        <h3>La demande de connectivité résiliente augmente rapidement</h3>
+        <div class="sum">Les secteurs maritime, isolé et entreprise convertissent les liaisons satellite de secours en connectivité principale.</div>
+        <div class="meta">
+          <div><div class="k">Pourquoi c'est important</div><div class="why">Une couche de revenus à forte marge et contractuelle que le marché grand public ne peut reproduire.</div></div>
+          <div><div class="k">Gagnants potentiels</div><div class="win">Intégrateurs de services managés · verticales maritime et énergie</div></div>
+          <div><div class="k">Risques potentiels</div><div class="risk">Cas d'usage sensibles à la latence · contention de capacité sur les zones chaudes</div></div>
+        </div>
+      </div>
+      <div class="insight">
+        <div class="num">INSIGHT 04</div>
+        <h3>L'opportunité se déplace vers le segment sol</h3>
+        <div class="sum">Le prochain gisement de valeur est dans l'infrastructure au sol et l'orchestration réseau — la couche qui rend la capacité orbitale utilisable.</div>
+        <div class="meta">
+          <div><div class="k">Pourquoi c'est important</div><div class="why">Moins capital-intensif que les satellites, avec des marges proches du logiciel et une meilleure défendabilité.</div></div>
+          <div><div class="k">Gagnants potentiels</div><div class="win">Logiciels d'orchestration · fabricants de passerelles et terminaux</div></div>
+          <div><div class="k">Risques potentiels</div><div class="risk">Guerres de standardisation · intégration verticale des opérateurs écrasant les tiers</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ REPORTS ============ -->
+<section class="view" id="reports">
+  <div class="wrap">
+    <div class="page-head">
+      <div class="kicker">Premium</div>
+      <h2>Rapports d'intelligence</h2>
+    </div>
+    <div class="rep-grid stagger">
+      <div class="report">
+        <div class="price">À PARTIR DE 29 € / MOIS</div>
+        <h3>Brief hebdomadaire d'intelligence spatiale</h3>
+        <ul>
+          <li>Synthèse de marché</li>
+          <li>Analyse des lancements</li>
+          <li>Mises à jour constellations</li>
+          <li>Tendances infrastructure</li>
+        </ul>
+        <button class="btn btn-primary">Débloquer le rapport complet</button>
+      </div>
+      <div class="report">
+        <div class="price">ÉDITION INVESTISSEUR · 99 €</div>
+        <h3>Édition investisseur</h3>
+        <ul>
+          <li>Secteurs en croissance</li>
+          <li>Opportunités de marché</li>
+          <li>Perspective stratégique</li>
+          <li>Catégories émergentes</li>
+        </ul>
+        <button class="btn btn-primary">Débloquer le rapport complet</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-inner">
+    <div>© 2026 Alcyone Network · La couche d'intelligence de l'économie spatiale</div>
+    <div class="domains">
+      <span>Intelligence <b>alcyone.network</b></span>
+      <span>Marque <b>alcyone.earth</b></span>
+      <span>Voyage spatial <b>· .venture</b></span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  function show(id){
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelectorAll('.nav-links a').forEach(a=>{
+      a.classList.toggle('active', a.dataset.v===id);
+    });
+    // re-trigger stagger animation
+    const v=document.getElementById(id);
+    v.querySelectorAll('.stagger').forEach(s=>{
+      s.querySelectorAll('*').forEach(el=>{el.style.animation='none';el.offsetHeight;el.style.animation='';});
+    });
+    window.scrollTo({top:0,behavior:'instant'});
+  }
+</script>
+<script type="module" src="alcyone-supabase.js"></script>
+<script type="module" src="alcyone-scores.js"></script>
+</body>
+</html>
