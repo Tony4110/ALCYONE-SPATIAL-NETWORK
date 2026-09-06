@@ -41,11 +41,11 @@ export async function computeScores() {
 }
 
 const SCORE_DEFS = [
-  { key: 'spaceEconomy',   type: 'space_economy',  label: 'Space Economy Score',         sub: 'Global index' },
-  { key: 'connectivity',   type: 'connectivity',   label: 'Connectivity Score',          sub: 'Coverage · adoption · demand' },
-  { key: 'infrastructure', type: 'infrastructure', label: 'Infrastructure Growth Score', sub: 'Constellations · orbital capacity' },
-  { key: 'launch',         type: 'launch',         label: 'Launch Activity Score',       sub: 'Cadence · momentum' },
-  { key: 'investment',     type: 'investment',     label: 'Investment Momentum Score',   sub: 'New entrants · competition' },
+  { key: 'spaceEconomy',   type: 'space_economy',  label: 'Space Economy Index',    sub: 'Composite view of the space economy' },
+  { key: 'connectivity',   type: 'connectivity',   label: 'Connectivity Score',     sub: 'Coverage · Adoption · Demand' },
+  { key: 'infrastructure', type: 'infrastructure', label: 'Infrastructure Score',   sub: 'Capacity · Deployment · Expansion' },
+  { key: 'launch',         type: 'launch',         label: 'Launch Activity Score',  sub: 'Launches · Cadence · Deployment' },
+  { key: 'investment',     type: 'investment',     label: 'Market Momentum Score',  sub: 'New entrants · Competition · Market dynamism' },
 ]
 const colorFor = (v) => v >= 80 ? 'var(--up)' : v >= 60 ? 'var(--gold)' : 'var(--down)'
 
