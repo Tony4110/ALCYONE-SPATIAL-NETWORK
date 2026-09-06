@@ -66,6 +66,17 @@ export async function getSignals() {
   return data
 }
 
+export async function getLaunches(timeFrame, limit = 4) {
+  const { data, error } = await supabase
+    .from('launches')
+    .select('name,provider,rocket,status,net,time_frame')
+    .eq('time_frame', timeFrame)
+    .order('net', { ascending: timeFrame === 'upcoming' })
+    .limit(limit)
+  if (error) throw error
+  return data ?? []
+}
+
 // =====================================================================
 // RENDER — injecte les données dans le DOM existant de la maquette
 // =====================================================================
@@ -141,6 +152,45 @@ async function renderTicker() {
   }
 }
 
+function fmtLaunchDate(net, timeFrame) {
+  if (!net) return timeFrame === 'upcoming' ? 'À VENIR' : 'RÉCENT'
+  const d = new Date(net)
+  const now = new Date()
+  const days = Math.round(Math.abs(d - now) / 86400000)
+  const prefix = timeFrame === 'upcoming' ? 'À VENIR · ~' : 'RÉCENT · il y a '
+  return prefix + days + ' j'
+}
+
+async function renderLaunches() {
+  const h3 = [...document.querySelectorAll('.panel-h h3')]
+    .find(e => /marché des lancements|launch market/i.test(e.textContent))
+  const panel = h3?.closest('.panel')
+  if (!panel) return
+  try {
+    const [upcoming, recent] = await Promise.all([
+      getLaunches('upcoming', 3),
+      getLaunches('recent', 3),
+    ])
+    const all = [...recent, ...upcoming]
+    if (!all.length) return
+    const rows = all.map(l => {
+      const cls = l.time_frame === 'recent' ? 'up' : ''
+      const rocket = l.rocket || l.provider || ''
+      const mission = (l.name || '').split('|').pop().trim()
+      return `<div class="launch-row">
+        <span><b>${esc(rocket)}</b> · ${esc(mission)}</span>
+        <span class="mono ${cls}">${esc(fmtLaunchDate(l.net, l.time_frame))}</span>
+      </div>`
+    }).join('')
+    const aiSummary = panel.querySelector('.ai-summary')
+    panel.querySelectorAll('.launch-row').forEach(r => r.remove())
+    if (aiSummary) aiSummary.insertAdjacentHTML('beforebegin', rows)
+    else panel.insertAdjacentHTML('beforeend', rows)
+  } catch (e) {
+    console.error('[launches]', e)
+  }
+}
+
 // =====================================================================
 // INIT
 // =====================================================================
@@ -148,6 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderInsights()
   renderConstellations()
   renderTicker()
+  renderLaunches()
 })
 
 // Note migration bundler / Next.js : remplacer les deux constantes par
