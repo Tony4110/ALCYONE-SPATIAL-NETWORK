@@ -120,7 +120,7 @@ async function renderScores() {
       getScoreHistoryByType().catch(e => { console.error('[score_history]', e); return {} }),
     ])
 
-    grid.innerHTML = SCORE_DEFS.map(d => {
+    grid.innerHTML = SCORE_DEFS.filter(d => d.type !== 'space_economy').map(d => {
       const v = scores[d.key]
       const c = colorFor(v)
       const meta = metaByType[d.type] ?? {}
