@@ -51,6 +51,15 @@ export async function getLaunchProviders() {
   return data
 }
 
+export async function getAllOperators() {
+  const { data, error } = await supabase
+    .from('operators')
+    .select('name, category, status, active_satellites, orbit, description, sort_order')
+    .order('active_satellites', { ascending: false, nullsFirst: false })
+  if (error) throw error
+  return data ?? []
+}
+
 export async function getMarkets() {
   const { data, error } = await supabase
     .from('markets').select('*').order('sort_order')
@@ -191,6 +200,32 @@ async function renderLaunches() {
   }
 }
 
+async function renderMarketCompanies() {
+  const tbody = document.querySelector('.market-companies tbody')
+  if (!tbody) return
+  try {
+    const ops = await getAllOperators()
+    if (!ops.length) return
+    const catLabel = { constellation: 'Constellation', launch_provider: 'Launch Provider' }
+    const statusBadge = {
+      expansion: ['Expansion','b-exp'], early: ['Early','b-exp'],
+      stable: ['Stable','b-stable'], consolidation: ['Consolidation','b-cons']
+    }
+    tbody.innerHTML = ops.map((o, i) => {
+      const [label, cls] = statusBadge[o.status] ?? ['—','b-stable']
+      const sats = (o.active_satellites != null && o.active_satellites >= 0)
+        ? o.active_satellites.toLocaleString('fr-FR') : '—'
+      return `<tr>
+        <td class="rank-no">${String(i+1).padStart(2,'0')}</td>
+        <td class="op">${esc(o.name)}</td>
+        <td>${esc(catLabel[o.category] ?? o.category ?? '—')}</td>
+        <td class="mono">${sats}</td>
+        <td><span class="badge ${cls}">${esc(label)}</span></td>
+      </tr>`
+    }).join('')
+  } catch (e) { console.error('[market]', e) }
+}
+
 // =====================================================================
 // INIT
 // =====================================================================
@@ -199,6 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderConstellations()
   renderTicker()
   renderLaunches()
+  renderMarketCompanies()
 })
 
 // Note migration bundler / Next.js : remplacer les deux constantes par
