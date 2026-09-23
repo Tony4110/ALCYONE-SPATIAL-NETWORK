@@ -86,6 +86,15 @@ export async function getLaunches(timeFrame, limit = 4) {
   return data ?? []
 }
 
+export async function getWeeklyEditions() {
+  const { data, error } = await supabase
+    .from('weekly_editions')
+    .select('week_label, edition_date, index_value, connectivity, infrastructure, launch, market, auto_summary, narrative, confidence, methodology_version, sources')
+    .order('edition_date', { ascending: false })
+  if (error) throw error
+  return data ?? []
+}
+
 export async function getSatelliteMomentum() {
   // Récupère l'historique des satellites, 2 dernières mesures par opérateur
   const { data, error } = await supabase
@@ -274,6 +283,31 @@ async function renderMarketCompanies() {
   } catch (e) { console.error('[market]', e) }
 }
 
+async function renderWeeklyEditions() {
+  const box = document.querySelector('.weekly-editions')
+  if (!box) return
+  try {
+    const editions = await getWeeklyEditions()
+    if (!editions.length) return
+    box.innerHTML = editions.map(e => {
+      const text = e.narrative || e.auto_summary || ''
+      return `<div class="panel" style="margin-top:18px">
+        <div class="panel-h">
+          <h3>Alcyone Space Economy Index — ${esc(e.week_label)}</h3>
+          <span class="pill">${esc(e.edition_date)}</span>
+        </div>
+        <div class="val" style="font-family:var(--serif);font-size:56px;color:var(--up);letter-spacing:-2px">${e.index_value}<span style="font-size:20px;color:var(--faint)">/100</span></div>
+        <div class="mono" style="color:var(--muted);margin:10px 0;font-size:13px">Connectivity ${e.connectivity} · Infrastructure ${e.infrastructure} · Launch ${e.launch} · Market ${e.market}</div>
+        <div style="margin-top:14px">
+          <div class="k" style="font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--faint);margin-bottom:6px">What moved it</div>
+          <div class="why" style="color:var(--text);line-height:1.6">${esc(text)}</div>
+        </div>
+        <div class="mono" style="color:var(--faint);font-size:11px;margin-top:16px;padding-top:12px;border-top:1px solid var(--line)">Confidence: ${esc(e.confidence)} · Methodology ${esc(e.methodology_version)} · Sources: ${esc(e.sources)}</div>
+      </div>`
+    }).join('')
+  } catch (err) { console.error('[weekly]', err) }
+}
+
 // =====================================================================
 // INIT
 // =====================================================================
@@ -283,6 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderTicker()
   renderLaunches()
   renderMarketCompanies()
+  renderWeeklyEditions()
 })
 
 // Note migration bundler / Next.js : remplacer les deux constantes par
