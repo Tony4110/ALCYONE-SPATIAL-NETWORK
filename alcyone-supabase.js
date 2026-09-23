@@ -182,12 +182,10 @@ async function renderConstellations() {
     table.innerHTML = header + rows.map(o => {
       const [label, cls] = STATUS_BADGE[o.status] ?? ['—', 'b-stable']
       const stage = o.deployment_stage ?? o.orbit ?? ''        // colonnes additives optionnelles
-      const pos   = o.market_position ?? o.description ?? ''
       return `<tr>
         <td class="op">${esc(o.name)}</td>
         <td><span class="badge ${cls}">${esc(label)}</span></td>
         <td>${esc(stage)}</td>
-        <td>${esc(pos)}</td>
       </tr>`
     }).join('')
   } catch (e) {
