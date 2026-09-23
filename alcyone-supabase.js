@@ -145,7 +145,7 @@ async function renderInsights() {
   const grid = document.querySelector('.ins-grid')
   if (!grid) return
   try {
-    const insights = await getInsights('fr')
+    const insights = await getInsights('en')
     if (!insights.length) return
     grid.innerHTML = insights.map((i, n) => `
       <div class="insight">
@@ -153,9 +153,9 @@ async function renderInsights() {
         <h3>${esc(i.title)}</h3>
         <div class="sum">${esc(i.what_happened)}</div>
         <div class="meta">
-          <div><div class="k">Pourquoi c'est important</div><div class="why">${esc(i.why_it_matters)}</div></div>
-          <div><div class="k">Gagnants potentiels</div><div class="win">${esc(i.who_benefits)}</div></div>
-          <div><div class="k">Risques potentiels</div><div class="risk">${esc(i.what_to_watch)}</div></div>
+          <div><div class="k">Why it matters</div><div class="why">${esc(i.why_it_matters)}</div></div>
+          <div><div class="k">Potential winners</div><div class="win">${esc(i.who_benefits)}</div></div>
+          <div><div class="k">Potential risks</div><div class="risk">${esc(i.what_to_watch)}</div></div>
         </div>
       </div>`).join('')
   } catch (e) {
@@ -168,7 +168,7 @@ const STATUS_BADGE = {
   expansion:     ['Expansion', 'b-exp'],
   stable:        ['Stable', 'b-stable'],
   consolidation: ['Consolidation', 'b-cons'],
-  early:         ['Précoce', 'b-exp'],
+  early:         ['Early', 'b-exp'],
 }
 async function renderConstellations() {
   // trouve le panneau "Constellation Monitor" sans avoir à modifier le HTML
@@ -212,12 +212,12 @@ async function renderTicker() {
 }
 
 function fmtLaunchDate(net, timeFrame) {
-  if (!net) return timeFrame === 'upcoming' ? 'À VENIR' : 'RÉCENT'
+  if (!net) return timeFrame === 'upcoming' ? 'UPCOMING' : 'RECENT'
   const d = new Date(net)
   const now = new Date()
   const days = Math.round(Math.abs(d - now) / 86400000)
-  const prefix = timeFrame === 'upcoming' ? 'À VENIR · ~' : 'RÉCENT · il y a '
-  return prefix + days + ' j'
+  const prefix = timeFrame === 'upcoming' ? 'UPCOMING · ~' : 'RECENT · '
+  return prefix + days + (timeFrame === 'upcoming' ? ' d' : ' d ago')
 }
 
 async function renderLaunches() {
