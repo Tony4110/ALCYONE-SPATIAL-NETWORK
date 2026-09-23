@@ -1,4 +1,4 @@
-import { getConstellations, getLaunchProviders, getMarkets, getSignals, supabase }
+import { getConstellations, getLaunchProviders, getMarkets, getSignals, getSatelliteMomentum, supabase }
   from './alcyone-supabase.js'
 
 const STATUS_W = { expansion: 1.0, early: 0.85, stable: 0.55, consolidation: 0.35 }
@@ -103,6 +103,19 @@ async function getScoreHistoryByType() {
   return byType
 }
 
+// Replaces the score-history badge on the Infrastructure card only.
+// Satellite momentum is a separate metric: never folded into the score.
+function infrastructureMomentumBadge(m) {
+  if (!m?.hasMomentum || m.momentum == null || !Number.isFinite(Number(m.momentum))) {
+    return `<span class="trend" style="color:var(--gold)">Baseline</span>`
+  }
+  const pct = Number(m.momentum)
+  const color = pct > 0 ? 'var(--up)' : pct < 0 ? 'var(--down)' : 'var(--muted)'
+  const arrow = pct > 0 ? '↑' : pct < 0 ? '↓' : '→'
+  const signed = pct > 0 ? `+${pct.toFixed(1)}` : pct < 0 ? `−${Math.abs(pct).toFixed(1)}` : pct.toFixed(1)
+  return `<span class="trend" style="color:var(--muted)">Momentum <span style="color:${color}">${arrow} ${signed}%</span> · ${esc(m.confidence)} · ${m.opsWithHistory}/${m.totalOps}</span>`
+}
+
 function renderList(items, itemClass = '') {
   const list = asList(items)
   if (!list.length) return `<div class="why" style="color:var(--faint)">—</div>`
@@ -114,10 +127,11 @@ async function renderScores() {
   const grid = document.querySelector('.cards4')
   if (!grid) return
   try {
-    const [scores, metaByType, historyByType] = await Promise.all([
+    const [scores, metaByType, historyByType, satMomentum] = await Promise.all([
       computeScores(),
       getScoreMetaByType().catch(e => { console.error('[score_meta]', e); return {} }),
       getScoreHistoryByType().catch(e => { console.error('[score_history]', e); return {} }),
+      getSatelliteMomentum().catch(e => { console.error('[satellite_momentum]', e); return null }),
     ])
 
     grid.innerHTML = SCORE_DEFS.filter(d => d.type !== 'space_economy').map(d => {
@@ -126,13 +140,18 @@ async function renderScores() {
       const meta = metaByType[d.type] ?? {}
       const label = meta.label || d.label
       const status = meta.status || d.sub
-      const badge = variationBadge(v, historyByType[d.type])
+      const isInfra = d.type === 'infrastructure'
+      const badge = isInfra ? null : variationBadge(v, historyByType[d.type])
+      const badgeHtml = isInfra
+        ? infrastructureMomentumBadge(satMomentum)
+        : `<span class="trend ${esc(badge.cls)}" style="color:${badge.color}">${esc(badge.text)}</span>`
+      const headStyle = isInfra ? ' style="flex-direction:column;align-items:flex-start;gap:4px"' : ''
       return `<div class="stat">
         <div class="label">${esc(label)}</div>
         <div class="val" style="color:${c}">${v}<span style="font-size:15px;color:var(--faint)">/100</span></div>
-        <div class="score-head">
+        <div class="score-head"${headStyle}>
           <span class="trend" style="color:${statusTone(meta.status)}">${esc(status)}</span>
-          <span class="trend ${esc(badge.cls)}" style="color:${badge.color}">${esc(badge.text)}</span>
+          ${badgeHtml}
         </div>
         <div style="margin-top:12px;height:5px;border-radius:3px;background:var(--line-2)">
           <div style="height:100%;width:${v}%;border-radius:3px;background:${c}"></div>

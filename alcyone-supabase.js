@@ -86,6 +86,56 @@ export async function getLaunches(timeFrame, limit = 4) {
   return data ?? []
 }
 
+export async function getSatelliteMomentum() {
+  // Récupère l'historique des satellites, 2 dernières mesures par opérateur
+  const { data, error } = await supabase
+    .from('satellite_history')
+    .select('operator_name, active_satellites, date')
+    .order('date', { ascending: false })
+  if (error) throw error
+  const rows = data ?? []
+
+  // Regroupe par opérateur, garde les 2 dernières mesures
+  const byOp = {}
+  for (const r of rows) {
+    if (!byOp[r.operator_name]) byOp[r.operator_name] = []
+    if (byOp[r.operator_name].length < 2) byOp[r.operator_name].push(r)
+  }
+
+  // Calcule la croissance % pour chaque opérateur qui a 2 mesures
+  let totalGrowthPct = 0
+  let opsWithHistory = 0
+  let totalOps = 0
+  for (const op in byOp) {
+    totalOps++
+    const m = byOp[op]
+    if (m.length === 2 && m[1].active_satellites > 0) {
+      const latest = m[0].active_satellites
+      const previous = m[1].active_satellites
+      const pct = ((latest - previous) / previous) * 100
+      totalGrowthPct += pct
+      opsWithHistory++
+    }
+  }
+
+  // Momentum = croissance moyenne des opérateurs avec historique
+  const hasMomentum = opsWithHistory >= 1
+  const avgGrowth = hasMomentum ? (totalGrowthPct / opsWithHistory) : null
+
+  // Confidence basée sur la couverture (combien d'opérateurs ont un historique)
+  let confidence = 'Low'
+  if (opsWithHistory >= 6) confidence = 'High'
+  else if (opsWithHistory >= 3) confidence = 'Medium'
+
+  return {
+    hasMomentum,
+    momentum: avgGrowth,          // null si pas d'historique
+    opsWithHistory,               // combien d'opérateurs ont 2 mesures
+    totalOps,                     // total d'opérateurs suivis
+    confidence,                   // High / Medium / Low
+  }
+}
+
 // =====================================================================
 // RENDER — injecte les données dans le DOM existant de la maquette
 // =====================================================================
