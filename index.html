@@ -243,8 +243,15 @@
 
   footer{border-top:1px solid var(--line);margin-top:80px;padding:40px 0;color:var(--faint);font-size:13px}
   .foot-inner{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
+  .foot-method{color:var(--faint);text-decoration:none;margin-left:16px;font-family:var(--mono);font-size:12px;cursor:pointer}
+  .foot-method:hover{color:var(--muted)}
   .domains{font-family:var(--mono);font-size:12px;display:flex;gap:18px;flex-wrap:wrap}
   .domains span{color:var(--muted)}.domains b{color:var(--accent);font-weight:400}
+  .method{max-width:760px}
+  .method .kicker{margin-top:34px}
+  .method .lead{margin-top:10px;max-width:none}
+  .method table{margin-top:16px}
+  .method .formula{font-family:var(--mono);font-size:13px;color:var(--text);margin-top:16px;line-height:1.6}
 
   #landing .block > .two{margin-top:0}
   #landing .two > .panel{margin-top:0}
@@ -496,9 +503,51 @@
   </div>
 </section>
 
+<!-- ============ METHODOLOGY ============ -->
+<section class="view" id="methodology">
+  <div class="wrap">
+    <div class="page-head">
+      <h2>Alcyone Space Economy Index — Methodology v1.0</h2>
+    </div>
+    <div class="method">
+      <div class="kicker">What it measures</div>
+      <p class="lead">The Alcyone Space Economy Index is a synthetic 0–100 reading of the state of the global space economy at a given point in time. It aggregates four market dimensions into a single composite figure.</p>
+
+      <div class="kicker">The four components</div>
+      <table>
+        <tr><th>Component</th><th>Weight</th><th>What it reflects</th></tr>
+        <tr><td>Connectivity</td><td>30%</td><td>Market adoption and connectivity signals</td></tr>
+        <tr><td>Infrastructure</td><td>30%</td><td>Constellation deployment status and infrastructure signals</td></tr>
+        <tr><td>Launch Activity</td><td>20%</td><td>Launch provider status and positive market signals</td></tr>
+        <tr><td>Market Momentum</td><td>20%</td><td>New entrants and competitive intensity</td></tr>
+      </table>
+      <p class="formula">Global Index = 0.30 × Connectivity + 0.30 × Infrastructure + 0.20 × Launch + 0.20 × Market Momentum.</p>
+
+      <div class="kicker">Score vs momentum</div>
+      <p class="lead">Each component carries two distinct readings:</p>
+      <p class="lead"><b style="color:var(--text);font-weight:600">Score</b> — the current structural state (how strong the dimension is).</p>
+      <p class="lead"><b style="color:var(--text);font-weight:600">Momentum</b> — the rate of change over time (how fast it is moving), computed only from real historical observations. Momentum is never folded into the Score.</p>
+
+      <div class="kicker">Data sources</div>
+      <p class="lead">Component inputs draw on public data — Space-Track (active satellite counts per constellation), Launch Library 2 / The Space Devs (launch cadence) — combined with structured expert assessment of operator and market status.</p>
+
+      <div class="kicker">Confidence</div>
+      <p class="lead">Each dynamic metric carries a confidence level (High / Medium / Low) reflecting data coverage — how many operators or sources contribute to the reading.</p>
+
+      <div class="kicker">Honesty rules</div>
+      <p class="lead">Historical values are never backfilled or retro-calculated.</p>
+      <p class="lead">Momentum requires at least two real observations; otherwise it is reported as Baseline — never zero, never estimated, never invented.</p>
+      <p class="lead">No data → no score. No history → no momentum claim. No source → no metric.</p>
+
+      <div class="kicker">Versioning</div>
+      <p class="lead">Methodology v1.0 · Initial production methodology · launched September 2026. Weights and sources are published; substantive changes will be versioned (v1.1, v2.0…).</p>
+    </div>
+  </div>
+</section>
+
 <footer>
   <div class="wrap foot-inner">
-    <div>© 2026 Alcyone Network · The intelligence layer of the space economy</div>
+    <div>© 2026 Alcyone Network · The intelligence layer of the space economy <a class="foot-method" onclick="show('methodology')">Methodology v1.0</a></div>
     <div class="domains">
       <span>Intelligence · <b>alcyone.network</b></span>
       <span>Space travel · <b>alcyone.venture</b></span>
