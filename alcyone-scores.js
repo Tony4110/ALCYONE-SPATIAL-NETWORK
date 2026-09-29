@@ -112,9 +112,13 @@ function infrastructureMomentumBadge(m) {
     return `<span class="trend" style="color:var(--gold)">Baseline</span>`
   }
   const pct = Number(m.momentum)
-  const color = pct > 0 ? 'var(--up)' : pct < 0 ? 'var(--down)' : 'var(--muted)'
-  const arrow = pct > 0 ? '↑' : pct < 0 ? '↓' : '→'
-  const signed = pct > 0 ? `+${pct.toFixed(1)}` : pct < 0 ? `−${Math.abs(pct).toFixed(1)}` : pct.toFixed(1)
+  const rounded = Number(pct.toFixed(1))
+  if (rounded === 0) {
+    return `<span class="trend" style="color:var(--muted)">Momentum <span style="color:var(--muted)">Stable</span> · ${esc(m.confidence)} · ${m.opsWithHistory}/${m.totalOps}</span>`
+  }
+  const color = rounded > 0 ? 'var(--up)' : 'var(--down)'
+  const arrow = rounded > 0 ? '↑' : '↓'
+  const signed = rounded > 0 ? `+${rounded.toFixed(1)}` : `−${Math.abs(rounded).toFixed(1)}`
   return `<span class="trend" style="color:var(--muted)">Momentum <span style="color:${color}">${arrow} ${signed}%</span> · ${esc(m.confidence)} · ${m.opsWithHistory}/${m.totalOps}</span>`
 }
 
