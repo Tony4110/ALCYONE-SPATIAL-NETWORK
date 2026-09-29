@@ -64,19 +64,21 @@ function statusTone(status) {
   return 'var(--muted)'
 }
 
-// Real variation only when 2 stored snapshots exist. One row (or a non-numeric
-// gap) → "Baseline". Never invent a percentage from a single point.
-function variationBadge(current, snapshots) {
-  const rows = Array.isArray(snapshots) ? snapshots : []
+// Real variation only between the two newest stored snapshots (date desc).
+// Fewer than 2 rows, or a non-numeric score → "Baseline". Never invent a delta.
+function variationBadge(snapshots) {
+  const rows = (Array.isArray(snapshots) ? snapshots : [])
+    .slice()
+    .sort((a, b) => String(b?.date ?? '').localeCompare(String(a?.date ?? '')))
   if (rows.length < 2) return { text: 'Baseline', cls: '', color: 'var(--gold)' }
 
-  const last = Number(rows[0]?.score)
-  const cur  = Number(current)
-  if (!Number.isFinite(last) || !Number.isFinite(cur)) {
+  const latest = Number(rows[0]?.score)
+  const previous = Number(rows[1]?.score)
+  if (!Number.isFinite(latest) || !Number.isFinite(previous)) {
     return { text: 'Baseline', cls: '', color: 'var(--gold)' }
   }
 
-  const delta = Math.round(cur) - Math.round(last)
+  const delta = Math.round(latest) - Math.round(previous)
   if (delta > 0) return { text: `↑ +${delta}`, cls: 'up', color: 'var(--up)' }
   if (delta < 0) return { text: `↓ −${Math.abs(delta)}`, cls: 'down', color: 'var(--down)' }
   return { text: 'Stable', cls: '', color: 'var(--muted)' }
@@ -141,7 +143,7 @@ async function renderScores() {
       const label = meta.label || d.label
       const status = meta.status || d.sub
       const isInfra = d.type === 'infrastructure'
-      const badge = isInfra ? null : variationBadge(v, historyByType[d.type])
+      const badge = isInfra ? null : variationBadge(historyByType[d.type])
       const badgeHtml = isInfra
         ? infrastructureMomentumBadge(satMomentum)
         : `<span class="trend ${esc(badge.cls)}" style="color:${badge.color}">${esc(badge.text)}</span>`
