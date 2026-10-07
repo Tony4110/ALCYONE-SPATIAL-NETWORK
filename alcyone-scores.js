@@ -162,6 +162,9 @@ async function renderScores() {
       getSatelliteMomentum().catch(e => { console.error('[satellite_momentum]', e); return null }),
     ])
 
+    // drive the hero "Global Index" number from the published edition
+    if (typeof window !== 'undefined' && window.setHeroIndex) window.setHeroIndex(scores.spaceEconomy)
+
     grid.innerHTML = SCORE_DEFS.filter(d => d.type !== 'space_economy').map(d => {
       const v = scores[d.key]
       const c = colorFor(v)

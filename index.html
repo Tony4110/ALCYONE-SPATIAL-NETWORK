@@ -585,25 +585,32 @@
   tickClock();
   setInterval(tickClock,1000);
 
-  (function countUpIndex(){
+  // Hero index count-up. setHeroIndex(target) is called with the live
+  // published index (weekly_editions) from alcyone-scores.js; on load it
+  // animates the HTML fallback value until the real one arrives.
+  (function(){
+    let raf;
+    window.setHeroIndex=function(target){
+      const el=document.querySelector('.hero-index-val');
+      if(!el) return;
+      let node=el.firstChild;
+      if(!node || node.nodeType!==Node.TEXT_NODE){
+        node=document.createTextNode('0');
+        el.insertBefore(node, el.firstChild);
+      }
+      target=parseInt(target,10);
+      if(!Number.isFinite(target)) return;
+      if(raf) cancelAnimationFrame(raf);
+      const t0=performance.now(), dur=1200, from=parseInt(node.textContent,10)||0;
+      function step(now){
+        const p=Math.min(1,(now-t0)/dur);
+        node.textContent=String(Math.round(from+(target-from)*(1-Math.pow(1-p,3))));
+        if(p<1) raf=requestAnimationFrame(step);
+      }
+      raf=requestAnimationFrame(step);
+    };
     const el=document.querySelector('.hero-index-val');
-    if(!el) return;
-    let node=el.firstChild;
-    if(!node || node.nodeType!==Node.TEXT_NODE){
-      node=document.createTextNode('0');
-      el.insertBefore(node, el.firstChild);
-    }
-    const target=parseInt(node.textContent,10);
-    if(!Number.isFinite(target)) return;
-    const t0=performance.now();
-    const dur=1200;
-    node.textContent='0';
-    function step(now){
-      const p=Math.min(1,(now-t0)/dur);
-      node.textContent=String(Math.round((1-Math.pow(1-p,3))*target));
-      if(p<1) requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
+    if(el){ const t=parseInt(el.textContent,10); if(Number.isFinite(t)) window.setHeroIndex(t); }
   })();
 </script>
 <script type="module" src="alcyone-supabase.js"></script>
