@@ -15,8 +15,8 @@ as $fn$
 declare
   v_infra_base   numeric; v_launch_base numeric; v_conn_base numeric;
   v_conn_up      numeric; v_new_entrants numeric; v_competition numeric;
-  v_avg_growth   numeric; v_ops_hist int; v_sat_mom numeric;
-  v_recent_launch int; v_prior_launch int; v_cadence_chg numeric; v_launch_mom numeric;
+  v_avg_growth   numeric; v_ops_hist int; v_sat_bonus numeric;
+  v_recent_launch int; v_prior_launch int; v_cadence_chg numeric; v_launch_bonus numeric;
   v_infra int; v_launch int; v_conn int; v_market int; v_index int;
   v_conf text; v_week text; v_summary text;
 begin
@@ -65,8 +65,9 @@ begin
     from pair where prev is not null and prev > 0 and latest is not null
   )
   select avg(pct), count(*) into v_avg_growth, v_ops_hist from growth;
-  -- neutre = 0.5 ; +5%/sem -> 1.0 ; -5% -> 0 (borné)
-  v_sat_mom := greatest(0, least(1, 0.5 + coalesce(v_avg_growth,0)/10.0));
+  -- BONUS SEULEMENT : une vraie croissance monte le score ; une semaine plate
+  -- ou en baisse ne le pénalise pas (momentum séparé). +5%/sem -> bonus plein.
+  v_sat_bonus := greatest(0, least(1, coalesce(v_avg_growth,0)/5.0));
 
   -- ---- momentum lancements RÉEL (28 j vs 28 j précédents) ----
   select count(*) into v_recent_launch from launches
@@ -76,11 +77,12 @@ begin
   v_cadence_chg := case when v_prior_launch = 0
                         then (case when v_recent_launch > 0 then 1 else 0 end)
                         else (v_recent_launch - v_prior_launch)::numeric / v_prior_launch end;
-  v_launch_mom := greatest(0, least(1, 0.5 + v_cadence_chg * 0.5));
+  -- bonus seulement aussi pour la cadence : +200% -> bonus plein ; plat/baisse -> 0
+  v_launch_bonus := greatest(0, least(1, v_cadence_chg / 2.0));
 
-  -- ---- sous-scores (mêmes poids v1 ; momentum data-driven pour infra & launch) ----
-  v_infra  := greatest(0, least(100, round((0.7*v_infra_base  + 0.3*v_sat_mom)    * 100)))::int;
-  v_launch := greatest(0, least(100, round((0.8*v_launch_base + 0.2*v_launch_mom) * 100)))::int;
+  -- ---- sous-scores : base structurelle STABLE + bonus data-driven (jamais de pénalité) ----
+  v_infra  := greatest(0, least(100, round((v_infra_base  + 0.20*v_sat_bonus)    * 100)))::int;
+  v_launch := greatest(0, least(100, round((v_launch_base + 0.15*v_launch_bonus) * 100)))::int;
   v_conn   := greatest(0, least(100, round((0.6*v_conn_base   + 0.4*v_conn_up)    * 100)))::int;
   v_market := greatest(0, least(100, round((0.7*v_new_entrants+ 0.3*v_competition)* 100)))::int;
   v_index  := greatest(0, least(100, round(0.3*v_conn + 0.3*v_infra + 0.2*v_launch + 0.2*v_market)))::int;
