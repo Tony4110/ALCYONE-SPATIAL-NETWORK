@@ -40,6 +40,28 @@ export async function computeScores() {
   return { spaceEconomy, connectivity, infrastructure, launch, investment }
 }
 
+// Source of truth = the weekly edition published by the scoring robot
+// (compute_and_publish_edition, data-driven v1.1). Falls back to the live
+// computation only if no edition has been published yet.
+async function getPublishedScores() {
+  try {
+    const { data } = await supabase
+      .from('weekly_editions')
+      .select('index_value, connectivity, infrastructure, launch, market')
+      .order('edition_date', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (data) return {
+      spaceEconomy: data.index_value,
+      connectivity: data.connectivity,
+      infrastructure: data.infrastructure,
+      launch: data.launch,
+      investment: data.market,
+    }
+  } catch (e) { console.error('[published_scores]', e) }
+  return computeScores()
+}
+
 const SCORE_DEFS = [
   { key: 'spaceEconomy',   type: 'space_economy',  label: 'Space Economy Index',    sub: 'Composite view of the space economy' },
   { key: 'connectivity',   type: 'connectivity',   label: 'Connectivity Score',     sub: 'Coverage · Adoption · Demand' },
@@ -134,7 +156,7 @@ async function renderScores() {
   if (!grid) return
   try {
     const [scores, metaByType, historyByType, satMomentum] = await Promise.all([
-      computeScores(),
+      getPublishedScores(),
       getScoreMetaByType().catch(e => { console.error('[score_meta]', e); return {} }),
       getScoreHistoryByType().catch(e => { console.error('[score_history]', e); return {} }),
       getSatelliteMomentum().catch(e => { console.error('[satellite_momentum]', e); return null }),
