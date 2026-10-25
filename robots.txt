@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /index-backup.html
+
+Sitemap: https://www.alcyone.network/sitemap.xml
