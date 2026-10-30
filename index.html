@@ -254,6 +254,32 @@
   .method table{margin-top:16px}
   .method .formula{font-family:var(--mono);font-size:13px;color:var(--text);margin-top:16px;line-height:1.6}
 
+  /* ---------- VERIFIED ---------- */
+  .v-toolbar{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:22px}
+  .v-filters{display:flex;flex-wrap:wrap;gap:8px}
+  .v-filters button{font-family:var(--mono);font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--accent);background:transparent;border:1px solid var(--line-2);border-radius:20px;padding:4px 11px;cursor:pointer}
+  .v-filters button.active{color:var(--text);background:var(--accent-soft);border-color:transparent}
+  .v-card .panel-h{margin-bottom:0}
+  .v-card h3{margin:0}
+  .v-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .v-meta{margin-top:14px;display:grid;gap:6px;font-size:13.5px;color:var(--muted)}
+  .v-meta b{font-family:var(--mono);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--faint);font-weight:500;margin-right:8px}
+  .v-score{font-family:var(--mono);font-size:12px;color:var(--star);margin-top:14px}
+  .v-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px}
+  .v-link{color:var(--accent);font-size:13.5px;font-weight:500}
+  .b-verified{background:rgba(159,196,255,.14);color:var(--star)}
+  .b-auto{background:transparent;color:var(--faint);border:1px solid var(--line)}
+  .v-note{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:14px}
+  .v-note.err{color:var(--down)}
+  .v-modal{position:fixed;inset:0;z-index:80;background:rgba(8,10,15,.72);display:flex;align-items:center;justify-content:center;padding:28px}
+  .v-modal[hidden]{display:none}
+  .v-modal .panel{margin-top:0;width:min(520px,100%);max-height:min(86vh,720px);overflow:auto}
+  .v-form{display:grid;gap:12px}
+  .v-form label{display:grid;gap:6px;font-family:var(--mono);font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--faint)}
+  .v-form input,.v-form textarea{font-family:var(--sans);font-size:14.5px;color:var(--text);background:var(--ink);border:1px solid var(--line-2);border-radius:9px;padding:10px 12px;width:100%}
+  .v-form textarea{min-height:88px;resize:vertical}
+  .v-form input:focus,.v-form textarea:focus{outline:none;border-color:var(--accent)}
+
   #landing .block > .two{margin-top:0}
   #landing .two > .panel{margin-top:0}
 
@@ -283,6 +309,7 @@
       <a data-v="market" onclick="show('market')">Market</a>
       <a data-v="insights" onclick="show('insights')">AI Insights</a>
       <a data-v="reports" onclick="show('reports')">Reports</a>
+      <a data-v="verified" onclick="show('verified')">Verified</a>
     </div>
     <div class="live"><span class="dot"></span><b>LIVE</b> · <span id="clock">--:--:-- UTC</span></div>
   </div>
@@ -552,6 +579,24 @@
   </div>
 </section>
 
+<!-- ============ VERIFIED ============ -->
+<section class="view" id="verified">
+  <div class="wrap">
+    <div class="page-head">
+      <div class="kicker">Public registry</div>
+      <h2>Verified</h2>
+      <p class="lead" style="margin-top:12px">Actors of the space economy. Claim a listing, or submit a company that is not on the register yet.</p>
+    </div>
+    <div class="v-toolbar">
+      <div class="v-filters" id="v-filters"></div>
+      <button type="button" class="btn btn-primary" id="v-submit-open">Submit your company</button>
+    </div>
+    <p class="v-note" id="v-status" hidden></p>
+    <p class="v-note" id="v-empty" hidden></p>
+    <div class="ins-grid stagger" id="v-grid"></div>
+  </div>
+</section>
+
 <footer>
   <div class="wrap foot-inner">
     <div>© 2026 Alcyone Network · The intelligence layer of the space economy <a class="foot-method" onclick="show('methodology')">Methodology v1.0</a></div>
@@ -561,6 +606,32 @@
     </div>
   </div>
 </footer>
+
+<div class="v-modal" id="v-modal" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="v-modal-title">
+    <div class="panel-h">
+      <h3 id="v-modal-title">Claim this company</h3>
+      <button type="button" class="btn btn-ghost" id="v-modal-close">Close</button>
+    </div>
+    <form class="v-form" id="v-form">
+      <div data-for="submit">
+        <label>Company<input name="company_name" autocomplete="organization"></label>
+        <label>Website<input name="website" type="url" placeholder="https://"></label>
+        <label>Category<input name="category" placeholder="connectivity_provider"></label>
+        <label>Country<input name="country" autocomplete="country-name"></label>
+        <label>Description<textarea name="description"></textarea></label>
+      </div>
+      <label>Name<input name="contact_name" autocomplete="name"></label>
+      <label>Email<input name="contact_email" type="email" required autocomplete="email"></label>
+      <label>Role<input name="contact_role"></label>
+      <div data-for="claim">
+        <label>Message<textarea name="message"></textarea></label>
+      </div>
+      <p class="v-note err" id="v-form-error" hidden></p>
+      <button type="submit" class="btn btn-primary" id="v-form-send">Send</button>
+    </form>
+  </div>
+</div>
 
 <script>
   function show(id){
