@@ -561,6 +561,64 @@ async function renderVerified() {
   }
 }
 
+function bindAssessment() {
+  const form = document.getElementById('a-form')
+  if (!form || form.dataset.bound) return
+  form.dataset.bound = '1'
+  form.addEventListener('submit', onAssessmentSubmit)
+}
+
+async function onAssessmentSubmit(e) {
+  e.preventDefault()
+  const form = e.currentTarget
+  const note = document.getElementById('a-status')
+  const send = document.getElementById('a-send')
+  const val = (name) => String(form.elements[name]?.value ?? '').trim()
+  const setNote = (text, isError) => {
+    if (!note) return
+    note.hidden = !text
+    note.classList.toggle('err', !!isError)
+    note.textContent = text || ''
+  }
+  const contact_email = val('contact_email')
+  const consent = !!form.elements.consent?.checked
+  if (!contact_email) {
+    setNote('Email is required.', true)
+    return
+  }
+  if (!consent) {
+    setNote('Consent is required.', true)
+    return
+  }
+  const row = {
+    sector: val('sector') || null,
+    use_case: val('use_case') || null,
+    locations: val('locations') || null,
+    bandwidth_need: val('bandwidth_need') || null,
+    availability_need: val('availability_need') || null,
+    redundancy: val('redundancy') || null,
+    budget_band: val('budget') || null,
+    timeline: val('timeline') || null,
+    company: val('company') || null,
+    contact_name: val('contact_name') || null,
+    contact_email,
+    consent: true,
+  }
+  if (send) { send.disabled = true; send.textContent = 'Sending…' }
+  setNote('')
+  try {
+    const { error } = await supabase.from('connectivity_requests').insert(row)
+    if (error) throw error
+    form.reset()
+    setNote("Thanks — we'll review your requirements and come back with suitable options.")
+  } catch (err) {
+    console.error('[assessment]', err)
+    setNote('Something went wrong. Please try again.', true)
+  } finally {
+    if (send) { send.disabled = false; send.textContent = 'Send request' }
+  }
+}
+
 // =====================================================================
 // INIT
 // =====================================================================
@@ -572,6 +630,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderMarketCompanies()
   renderWeeklyEditions()
   renderVerified()
+  bindAssessment()
 })
 
 // Note migration bundler / Next.js : remplacer les deux constantes par
