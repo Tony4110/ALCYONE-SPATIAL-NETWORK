@@ -841,6 +841,7 @@
       }
       target=parseInt(target,10);
       if(!Number.isFinite(target)) return;
+      el.style.color = target >= 70 ? 'var(--text)' : 'var(--gold)';
       if(raf) cancelAnimationFrame(raf);
       const t0=performance.now(), dur=1200, from=parseInt(node.textContent,10)||0;
       function step(now){

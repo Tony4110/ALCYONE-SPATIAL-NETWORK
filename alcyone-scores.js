@@ -168,6 +168,7 @@ async function renderScores() {
     grid.innerHTML = SCORE_DEFS.filter(d => d.type !== 'space_economy').map(d => {
       const v = scores[d.key]
       const c = colorFor(v)
+      const numColor = v >= 70 ? 'var(--text)' : 'var(--gold)'
       const meta = metaByType[d.type] ?? {}
       const label = meta.label || d.label
       const status = meta.status || d.sub
@@ -179,7 +180,7 @@ async function renderScores() {
       const headStyle = isInfra ? ' style="flex-direction:column;align-items:flex-start;gap:4px"' : ''
       return `<div class="stat">
         <div class="label">${esc(label)}</div>
-        <div class="val" style="color:var(--blue)">${v}<span style="font-size:15px;color:var(--faint)">/100</span></div>
+        <div class="val" style="color:${numColor}">${v}<span style="font-size:15px;color:var(--faint)">/100</span></div>
         <div class="score-head"${headStyle}>
           <span class="trend" style="color:${statusTone(meta.status)}">${esc(status)}</span>
           ${badgeHtml}
