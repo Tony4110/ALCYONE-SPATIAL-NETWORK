@@ -732,6 +732,19 @@
     });
     window.scrollTo({top:0,behavior:'instant'});
   }
+  // Deep link from static pages into the existing Assessment view.
+  (function(){
+    const q = new URLSearchParams(location.search);
+    const requested = q.get('view') || (location.hash || '').replace(/^#/, '');
+    if (requested !== 'assessment' || !document.getElementById('assessment')) return;
+    show('assessment');
+    const sector = q.get('sector');
+    if (!sector) return;
+    const sel = document.querySelector('#assessment select[name="sector"]');
+    if (!sel) return;
+    const match = Array.from(sel.options).find(o => o.value === sector || o.text === sector);
+    if (match) sel.value = match.value;
+  })();
   function tickClock(){
     const el=document.getElementById('clock');
     if(!el) return;
