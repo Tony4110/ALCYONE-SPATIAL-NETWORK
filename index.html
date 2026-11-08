@@ -34,11 +34,15 @@
     --accent:#6FA8FF;
     --accent-soft:rgba(111,168,255,.12);
     --gold:#E8B65A;
+    --hero-num:var(--gold);
     --up:#3DD68C;
     --down:#FF6B6B;
     --sans:'Hanken Grotesk',sans-serif;
     --serif:'Fraunces',Georgia,serif;
     --mono:'IBM Plex Mono',monospace;
+  }
+  [data-theme="dark"]{
+    --hero-num:var(--up);
   }
   [data-theme="light"]{
     --ink:#F8FAFC;
@@ -179,7 +183,7 @@
   .hero-dash{display:grid;grid-template-columns:1.05fr 1.35fr;gap:40px 34px;align-items:stretch;margin-top:34px}
   .hero-index{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:36px 28px;display:flex;flex-direction:column;justify-content:flex-start}
   .hero-index h2{font-family:var(--serif);font-weight:500;font-size:clamp(22px,2.4vw,28px);letter-spacing:-.5px;margin-top:8px}
-  .hero-index-val{font-family:var(--serif);font-weight:500;font-size:clamp(90px,13vw,150px);line-height:.82;letter-spacing:-4px;margin-top:auto;padding-top:18px;color:var(--blue)}
+  .hero-index-val{font-family:var(--serif);font-weight:500;font-size:clamp(90px,13vw,150px);line-height:.82;letter-spacing:-4px;margin-top:auto;padding-top:18px;color:var(--hero-num)}
   .hero-index-val span{font-size:32px;color:var(--faint);letter-spacing:0}
   .hero-scores{display:contents}
   .hero-scores .cards4{margin-top:0;grid-column:2;grid-row:1}
@@ -841,7 +845,6 @@
       }
       target=parseInt(target,10);
       if(!Number.isFinite(target)) return;
-      el.style.color = target >= 70 ? 'var(--up)' : target >= 60 ? 'var(--gold)' : 'var(--down)';
       if(raf) cancelAnimationFrame(raf);
       const t0=performance.now(), dur=1200, from=parseInt(node.textContent,10)||0;
       function step(now){
