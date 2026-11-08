@@ -179,7 +179,7 @@ async function renderScores() {
       const headStyle = isInfra ? ' style="flex-direction:column;align-items:flex-start;gap:4px"' : ''
       return `<div class="stat">
         <div class="label">${esc(label)}</div>
-        <div class="val" style="color:${c}">${v}<span style="font-size:15px;color:var(--faint)">/100</span></div>
+        <div class="val" style="color:var(--blue)">${v}<span style="font-size:15px;color:var(--faint)">/100</span></div>
         <div class="score-head"${headStyle}>
           <span class="trend" style="color:${statusTone(meta.status)}">${esc(status)}</span>
           ${badgeHtml}
