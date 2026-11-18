@@ -323,6 +323,7 @@ let verifiedActors = []
 let verifiedFilter = 'all'
 let verifiedMode = 'claim'
 let verifiedActor = null
+let verifiedClaimPrefill = false
 let verifiedBound = false
 
 function labelize(value) {
@@ -427,31 +428,53 @@ function renderVerifiedCards() {
 
 function closeVerifiedModal() {
   const modal = document.getElementById('v-modal')
+  const banner = document.getElementById('v-claim-banner')
+  if (banner) banner.hidden = true
   if (modal) modal.hidden = true
 }
 
-function openVerifiedModal(mode, actor) {
+function setField(form, name, value) {
+  const field = form.elements[name]
+  if (field) field.value = value == null ? '' : String(value)
+}
+
+function openVerifiedModal(mode, actor, opts = {}) {
   const modal = document.getElementById('v-modal')
   const form = document.getElementById('v-form')
   const title = document.getElementById('v-modal-title')
   if (!modal || !form || !title) return
+  const prefill = !!opts.prefill
   verifiedMode = mode
   verifiedActor = actor || null
+  verifiedClaimPrefill = prefill
   form.reset()
   setFormError('')
   setVerifiedNote('')
+  const banner = document.getElementById('v-claim-banner')
+  if (banner) banner.hidden = !prefill
   title.textContent = mode === 'claim' ? 'Claim this company' : 'Submit your company'
   form.querySelectorAll('[data-for]').forEach(el => {
-    const on = el.dataset.for === mode
+    const roles = el.dataset.for.split(/\s+/)
+    const on = roles.includes(mode) || (prefill && roles.includes('profile'))
     el.hidden = !on
-    el.querySelectorAll('input,textarea').forEach(input => { input.disabled = !on })
+    el.querySelectorAll('input,textarea,select').forEach(input => { input.disabled = !on })
   })
-  form.elements.company_name.required = mode === 'submit'
+  setField(form, 'actor_id', actor?.id ?? '')
+  if (prefill && actor) {
+    setField(form, 'company_name', actor.name)
+    setField(form, 'website', actor.website)
+    setField(form, 'category', actor.category)
+    setField(form, 'country', actor.hq_country)
+    setField(form, 'regions', coverageText(actor.regions))
+    setField(form, 'description', actor.short_description)
+  }
+  form.elements.company_name.required = mode === 'submit' || prefill
   const send = document.getElementById('v-form-send')
   send.disabled = false
   send.textContent = 'Send'
   modal.hidden = false
-  form.elements[mode === 'claim' ? 'contact_email' : 'company_name']?.focus()
+  const focusName = prefill ? 'company_name' : (mode === 'claim' ? 'contact_email' : 'company_name')
+  form.elements[focusName]?.focus()
 }
 
 async function onVerifiedSubmit(e) {
@@ -469,15 +492,29 @@ async function onVerifiedSubmit(e) {
   let row
   let thanks
   if (verifiedMode === 'claim') {
-    if (!verifiedActor) return
+    const actorId = val('actor_id') || verifiedActor?.id
+    if (!actorId) return
     row = {
-      actor_id: verifiedActor.id,
+      actor_id: actorId,
       kind: 'claim',
-      company_name: verifiedActor.name,
+      company_name: verifiedActor?.name,
       contact_name: contact_name || null,
       contact_email,
       contact_role: contact_role || null,
       message: val('message') || null,
+    }
+    if (verifiedClaimPrefill) {
+      const company_name = val('company_name')
+      if (!company_name) {
+        setFormError('Company name is required.')
+        return
+      }
+      row.company_name = company_name
+      row.website = val('website') || null
+      row.category = val('category') || null
+      row.country = val('country') || null
+      row.regions = val('regions') || null
+      row.description = val('description') || null
     }
     thanks = "Thanks — we'll review your claim"
   } else {
@@ -547,10 +584,30 @@ function bindVerifiedUi() {
   form.addEventListener('submit', onVerifiedSubmit)
 }
 
+async function openClaimFromQuery() {
+  const q = new URLSearchParams(location.search)
+  if (q.get('view') !== 'verified') return
+  const verified = document.getElementById('verified')
+  if (verified && !verified.classList.contains('active') && typeof show === 'function') show('verified')
+  const token = String(q.get('claim') ?? '').trim()
+  if (!token) return
+  bindVerifiedUi()
+  try {
+    const { data, error } = await supabase.rpc('get_actor_by_claim_token', { p_token: token })
+    if (error) throw error
+    const actor = Array.isArray(data) ? data[0] : null
+    if (!actor || actor.id == null || actor.id === '') return
+    openVerifiedModal('claim', actor, { prefill: true })
+  } catch (err) {
+    console.error('[claim token]', err)
+  }
+}
+
 async function renderVerified() {
   const grid = document.getElementById('v-grid')
   if (!grid) return
   bindVerifiedUi()
+  openClaimFromQuery()
   try {
     verifiedActors = await getActors()
     renderVerifiedFilters()

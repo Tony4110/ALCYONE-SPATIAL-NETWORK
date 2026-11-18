@@ -317,6 +317,9 @@
   .b-auto{background:transparent;color:var(--faint);border:1px solid var(--line)}
   .v-note{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:14px}
   .v-note.err{color:var(--down)}
+  .v-claim-banner{margin-top:0;color:var(--star);background:var(--accent-soft);border:1px solid var(--line-2);border-radius:10px;padding:12px 14px;line-height:1.55}
+  .v-claim-banner[hidden]{display:none}
+  .v-form input[type="hidden"]{display:none}
   .v-modal{position:fixed;inset:0;z-index:80;background:rgba(8,10,15,.72);display:flex;align-items:center;justify-content:center;padding:28px}
   .v-modal[hidden]{display:none}
   .v-modal .panel{margin-top:0;width:min(520px,100%);max-height:min(86vh,720px);overflow:auto}
@@ -759,11 +762,18 @@
       <button type="button" class="btn btn-ghost" id="v-modal-close">Close</button>
     </div>
     <form class="v-form" id="v-form">
-      <div data-for="submit">
+      <p class="v-note v-claim-banner" id="v-claim-banner" hidden>Public data — not yet claimed. Review and complete your profile.</p>
+      <input type="hidden" name="actor_id" value="">
+      <div data-for="submit profile">
         <label>Company<input name="company_name" autocomplete="organization"></label>
         <label>Website<input name="website" type="url" placeholder="https://"></label>
         <label>Category<input name="category" placeholder="connectivity_provider"></label>
         <label>Country<input name="country" autocomplete="country-name"></label>
+      </div>
+      <div data-for="profile">
+        <label>Regions<input name="regions" autocomplete="off"></label>
+      </div>
+      <div data-for="submit profile">
         <label>Description<textarea name="description"></textarea></label>
       </div>
       <label>Name<input name="contact_name" autocomplete="name"></label>
@@ -796,8 +806,8 @@
   (function(){
     const q = new URLSearchParams(location.search);
     const requested = q.get('view') || (location.hash || '').replace(/^#/, '');
+    if ((requested === 'assessment' || requested === 'verified') && document.getElementById(requested)) show(requested);
     if (requested !== 'assessment' || !document.getElementById('assessment')) return;
-    show('assessment');
     const sector = q.get('sector');
     if (!sector) return;
     const sel = document.querySelector('#assessment select[name="sector"]');
