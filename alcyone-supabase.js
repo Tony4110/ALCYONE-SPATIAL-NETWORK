@@ -325,6 +325,13 @@ let verifiedMode = 'claim'
 let verifiedActor = null
 let verifiedClaimPrefill = false
 let verifiedBound = false
+const actorById = new Map()
+
+function rememberActors(list) {
+  for (const a of list || []) {
+    if (a && a.id != null && a.id !== '') actorById.set(String(a.id), a)
+  }
+}
 
 function labelize(value) {
   return String(value ?? '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim()
@@ -569,13 +576,15 @@ function bindVerifiedUi() {
     renderVerifiedFilters()
     renderVerifiedCards()
   })
-  grid.addEventListener('click', (e) => {
+  document.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-claim]')
     if (!btn) return
-    const actor = verifiedActors.find(a => String(a.id) === btn.dataset.claim)
+    const actor = actorById.get(String(btn.dataset.claim))
+      || verifiedActors.find(a => String(a.id) === btn.dataset.claim)
     if (actor) openVerifiedModal('claim', actor)
   })
   openSubmit.addEventListener('click', () => openVerifiedModal('submit'))
+  document.getElementById('cx-claim-open')?.addEventListener('click', () => openVerifiedModal('submit'))
   closeBtn.addEventListener('click', closeVerifiedModal)
   modal.addEventListener('click', (e) => { if (e.target === modal) closeVerifiedModal() })
   document.addEventListener('keydown', (e) => {
@@ -610,6 +619,7 @@ async function renderVerified() {
   openClaimFromQuery()
   try {
     verifiedActors = await getActors()
+    rememberActors(verifiedActors)
     renderVerifiedFilters()
     renderVerifiedCards()
   } catch (e) {
@@ -677,6 +687,164 @@ async function onAssessmentSubmit(e) {
 }
 
 // =====================================================================
+// CONNECTIVITY HOME — featured maritime providers + marketplace
+// (does not touch scores, weekly editions, or the Index)
+// =====================================================================
+async function getMaritimeProviders(limit = 8) {
+  const { data, error } = await supabase
+    .from('actors')
+    .select('id, slug, name, website, category, subcategory, hq_country, regions, short_description, status')
+    .eq('is_published', true)
+    .or('category.ilike.%maritime%,subcategory.ilike.%maritime%,short_description.ilike.%maritime%')
+    .order('name', { ascending: true })
+    .limit(limit)
+  if (error) throw error
+  return data ?? []
+}
+
+async function getPublishedActors() {
+  const { data, error } = await supabase
+    .from('actors')
+    .select('id, slug, name, website, category, subcategory, hq_country, regions, short_description, status')
+    .eq('is_published', true)
+    .order('name', { ascending: true })
+  if (error) throw error
+  return data ?? []
+}
+
+function providerBadge(status) {
+  if (status === 'verified') return { cls: 'cx-badge-gold', label: '✓ Verified' }
+  if (status === 'claimed') return { cls: 'cx-badge-blue', label: 'Claimed' }
+  if (status === 'auto' || !status) return { cls: 'cx-badge-muted', label: 'Unclaimed' }
+  return { cls: 'cx-badge-muted', label: labelize(status) }
+}
+
+function providerTags(actor) {
+  const out = []
+  const push = (value) => {
+    const t = String(value ?? '').trim()
+    if (!t || t.length > 24) return
+    if (/(\$|€|mbps|gbps|latency|\bms\b|price|throughput)/i.test(t)) return
+    if (out.some(x => x.toLowerCase() === t.toLowerCase())) return
+    out.push(t)
+  }
+  if (actor.subcategory) push(labelize(actor.subcategory))
+  const regions = Array.isArray(actor.regions) ? actor.regions : []
+  if (regions[0]) push(String(regions[0]))
+  return out.slice(0, 3)
+}
+
+function providerCard(actor) {
+  const name = actor.name || 'Provider'
+  const initial = (name.trim().charAt(0) || '•').toUpperCase()
+  const badge = providerBadge(actor.status)
+  const meta = labelize(actor.category || 'Provider')
+  const tags = providerTags(actor).map(t => `<span>${esc(t)}</span>`).join('')
+  const unclaimed = actor.status === 'auto' || !actor.status
+  const cta = unclaimed
+    ? `<button type="button" class="cx-cta cx-cta-gold" data-claim="${esc(actor.id)}">Is this you? Claim →</button>`
+    : `<a class="cx-cta" href="/?actor=${esc(actor.slug || actor.id)}">View solution →</a>`
+  return `<article class="cx-card cx-providers">
+    <div class="cx-card-top">
+      <div class="cx-chip" aria-hidden="true">${esc(initial)}</div>
+      <span class="cx-badge ${badge.cls}">${esc(badge.label)}</span>
+    </div>
+    <h3>${esc(name)}</h3>
+    <p class="cx-meta">${esc(meta)}</p>
+    <div class="cx-tags">${tags}</div>
+    ${cta}
+  </article>`
+}
+
+function placeholderProviderCards() {
+  return [1, 2, 3, 4].map(n => `<article class="cx-card cx-providers">
+    <div class="cx-card-top">
+      <div class="cx-chip" aria-hidden="true">${n}</div>
+      <span class="cx-badge cx-badge-muted">Unclaimed</span>
+    </div>
+    <h3>Maritime provider</h3>
+    <p class="cx-meta">Connectivity provider</p>
+    <div class="cx-tags"><span>Placeholder</span></div>
+    <a class="cx-cta" href="/?view=marketplace">View solution →</a>
+  </article>`).join('')
+}
+
+async function renderFeaturedProviders() {
+  const host = document.getElementById('cx-providers')
+  if (!host) return
+  try {
+    const rows = await getMaritimeProviders(8)
+    rememberActors(rows)
+    host.innerHTML = rows.length ? rows.map(providerCard).join('') : placeholderProviderCards()
+  } catch (e) {
+    console.error('[maritime providers]', e)
+    host.innerHTML = placeholderProviderCards()
+  }
+}
+
+async function renderMarketplace() {
+  const host = document.getElementById('mkt-grid')
+  if (!host) return
+  try {
+    const rows = await getPublishedActors()
+    rememberActors(rows)
+    host.innerHTML = rows.length
+      ? rows.map(providerCard).join('')
+      : '<p class="cx-pending">No providers published yet.</p>'
+  } catch (e) {
+    console.error('[marketplace]', e)
+    host.innerHTML = '<p class="cx-pending">The marketplace could not be loaded.</p>'
+  }
+}
+
+async function renderActorFiche() {
+  const host = document.getElementById('actor-body')
+  if (!host) return
+  const slug = new URLSearchParams(location.search).get('actor')
+  if (!slug) {
+    host.innerHTML = '<p class="lead">This provider profile is unavailable.</p>'
+    return
+  }
+  try {
+    const { data, error } = await supabase
+      .from('actors')
+      .select('id, slug, name, website, category, subcategory, hq_country, regions, short_description, status')
+      .eq('is_published', true)
+      .eq('slug', slug)
+      .maybeSingle()
+    if (error) throw error
+    if (!data) {
+      host.innerHTML = '<p class="lead">This provider profile is unavailable.</p>'
+      return
+    }
+    rememberActors([data])
+    const badge = providerBadge(data.status)
+    const meta = labelize(data.category || 'Provider')
+    const tags = providerTags(data).map(t => `<span>${esc(t)}</span>`).join('')
+    const site = safeHttpUrl(data.website)
+    const cov = coverageText(data.regions)
+    const unclaimed = data.status === 'auto' || !data.status
+    host.innerHTML = `<article class="actor-fiche cx-providers">
+      <div class="panel-h">
+        <h2 style="font-family:var(--serif);font-weight:500;font-size:clamp(28px,4vw,40px);letter-spacing:-.5px">${esc(data.name)}</h2>
+        <span class="cx-badge ${badge.cls}">${esc(badge.label)}</span>
+      </div>
+      <p class="cx-meta">${esc(meta)}</p>
+      ${tags ? `<div class="cx-tags">${tags}</div>` : ''}
+      ${data.short_description ? `<p class="lead">${esc(data.short_description)}</p>` : ''}
+      ${(data.hq_country || cov) ? `<div class="v-meta">${data.hq_country ? `<div><b>HQ</b>${esc(data.hq_country)}</div>` : ''}${cov ? `<div><b>Coverage</b>${esc(cov)}</div>` : ''}</div>` : ''}
+      <div class="v-actions" style="justify-content:flex-start">
+        ${site ? `<a class="v-link" href="${esc(site)}" target="_blank" rel="noopener noreferrer">Website</a>` : ''}
+        ${unclaimed ? `<button type="button" class="btn btn-gold" data-claim="${esc(data.id)}">Is this you? Claim →</button>` : ''}
+      </div>
+    </article>`
+  } catch (e) {
+    console.error('[actor]', e)
+    host.innerHTML = '<p class="lead">This provider profile could not be loaded.</p>'
+  }
+}
+
+// =====================================================================
 // INIT
 // =====================================================================
 document.addEventListener('DOMContentLoaded', () => {
@@ -687,6 +855,9 @@ document.addEventListener('DOMContentLoaded', () => {
   renderMarketCompanies()
   renderWeeklyEditions()
   renderVerified()
+  renderFeaturedProviders()
+  renderMarketplace()
+  if (new URLSearchParams(location.search).get('actor')) renderActorFiche()
   bindAssessment()
 })
 
