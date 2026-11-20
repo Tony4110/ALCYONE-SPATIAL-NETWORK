@@ -845,6 +845,213 @@ async function renderActorFiche() {
 }
 
 // =====================================================================
+// MARKET DISCOVERY — signals, companies, activity totals
+// =====================================================================
+async function getMarketSignals() {
+  const { data, error } = await supabase
+    .from('market_signals')
+    .select('signal_type, title, summary, event_date, source_url, confidence')
+    .order('event_date', { ascending: false })
+  if (error) throw error
+  return data ?? []
+}
+
+async function getMarketDiscoveryActors() {
+  const { data, error } = await supabase
+    .from('actors')
+    .select('name, company_type, hq_country, short_description, website, source_url, last_verified_at')
+    .eq('in_market_discovery', true)
+    .order('name', { ascending: true })
+  if (error) throw error
+  return data ?? []
+}
+
+async function getMarketActivityRows() {
+  const [contracts, funding] = await Promise.all([
+    supabase.from('contracts').select('amount_eur, currency, awarded_date, source_url'),
+    supabase.from('funding_rounds').select('amount_eur, currency, announced_date, source_url'),
+  ])
+  if (contracts.error) throw contracts.error
+  if (funding.error) throw funding.error
+  return { contracts: contracts.data ?? [], funding: funding.data ?? [] }
+}
+
+function isoDate(value) {
+  const s = String(value ?? '').slice(0, 10)
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : ''
+}
+
+function sourceLink(url, label) {
+  const href = safeHttpUrl(url)
+  if (!href) return `<span class="cx-cta" style="cursor:default">No source</span>`
+  return `<a class="cx-cta" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>`
+}
+
+function confidenceBadge(value) {
+  const v = String(value ?? '').toLowerCase()
+  if (v === 'high') return { cls: 'b-exp', label: 'High' }
+  if (v === 'medium') return { cls: 'b-stable', label: 'Medium' }
+  if (v === 'low') return { cls: 'b-cons', label: 'Low' }
+  return { cls: 'cx-badge-muted', label: v ? labelize(v) : '—' }
+}
+
+function latestDated(rows, dateKey) {
+  let best = null
+  for (const row of rows) {
+    const d = isoDate(row[dateKey])
+    if (!d) continue
+    if (!best || d > best.date) best = { date: d, source_url: row.source_url }
+  }
+  return best
+}
+
+function formatMoney(amount, currency) {
+  const code = currency || 'USD'
+  try {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: code, maximumFractionDigits: 0 }).format(amount)
+  } catch {
+    return `${code} ${Math.round(amount).toLocaleString('en-US')}`
+  }
+}
+
+function knownAmountSummary(rows, dateKey) {
+  const sums = {}
+  let known = 0
+  let latest = null
+  for (const row of rows) {
+    if (row.amount_eur == null || row.amount_eur === '') continue
+    const n = Number(row.amount_eur)
+    if (!Number.isFinite(n)) continue
+    known++
+    const code = row.currency || 'USD'
+    sums[code] = (sums[code] || 0) + n
+    const d = isoDate(row[dateKey])
+    if (d && (!latest || d > latest.date)) latest = { date: d, source_url: row.source_url }
+  }
+  const text = Object.entries(sums).map(([code, total]) => formatMoney(total, code)).join(' · ')
+  return { known, text: text || '—', latest }
+}
+
+function signalCard(row) {
+  const type = labelize(row.signal_type || 'Signal')
+  const initial = (type.trim().charAt(0) || '•').toUpperCase()
+  const confidence = confidenceBadge(row.confidence)
+  const date = isoDate(row.event_date) || '—'
+  return `<article class="cx-card cx-providers">
+    <div class="cx-card-top">
+      <div class="cx-chip" aria-hidden="true">${esc(initial)}</div>
+      <span class="cx-badge cx-badge-accent">${esc(type)}</span>
+    </div>
+    <h3>${esc(row.title || 'Signal')}</h3>
+    <p class="md-sum">${esc(row.summary || '—')}</p>
+    <p class="cx-meta">${esc(date)}</p>
+    <span class="badge ${confidence.cls}">${esc(confidence.label)}</span>
+    ${sourceLink(row.source_url, 'Source →')}
+  </article>`
+}
+
+function companyCard(row) {
+  const name = row.name || 'Company'
+  const initial = (name.trim().charAt(0) || '•').toUpperCase()
+  const type = row.company_type ? labelize(row.company_type) : '—'
+  const date = isoDate(row.last_verified_at) || '—'
+  const website = safeHttpUrl(row.website)
+  return `<article class="cx-card cx-providers">
+    <div class="cx-card-top">
+      <div class="cx-chip" aria-hidden="true">${esc(initial)}</div>
+      <span class="cx-badge cx-badge-accent">${esc(type)}</span>
+    </div>
+    <h3>${esc(name)}</h3>
+    <p class="cx-meta">${esc(row.hq_country || '—')}</p>
+    <p class="md-sum">${esc(row.short_description || '—')}</p>
+    <p class="cx-meta">${esc(date)}</p>
+    ${website ? sourceLink(website, 'Website →') : sourceLink(row.source_url, 'Source →')}
+  </article>`
+}
+
+function activityCard({ chip, badge, value, detail, date, url }) {
+  return `<article class="cx-card cx-providers">
+    <div class="cx-card-top">
+      <div class="cx-chip" aria-hidden="true">${esc(chip)}</div>
+      <span class="cx-badge cx-badge-accent">${esc(badge)}</span>
+    </div>
+    <h3>${esc(value)}</h3>
+    <p class="md-sum">${esc(detail)}</p>
+    <p class="cx-meta">${esc(date || '—')}</p>
+    ${sourceLink(url, 'Source →')}
+  </article>`
+}
+
+async function renderMarketDiscovery() {
+  const signalsHost = document.getElementById('md-signals')
+  const companiesHost = document.getElementById('md-companies')
+  const activityHost = document.getElementById('md-activity')
+  if (!signalsHost || !companiesHost || !activityHost) return
+
+  try {
+    const rows = await getMarketSignals()
+    signalsHost.innerHTML = rows.length
+      ? rows.map(signalCard).join('')
+      : '<p class="cx-pending">No signals dated yet.</p>'
+  } catch (e) {
+    console.error('[market signals]', e)
+    signalsHost.innerHTML = '<p class="cx-pending">Signals could not be loaded.</p>'
+  }
+
+  try {
+    const rows = await getMarketDiscoveryActors()
+    companiesHost.innerHTML = rows.length
+      ? rows.map(companyCard).join('')
+      : '<p class="cx-pending">No companies in market discovery.</p>'
+  } catch (e) {
+    console.error('[market companies]', e)
+    companiesHost.innerHTML = '<p class="cx-pending">Companies could not be loaded.</p>'
+  }
+
+  try {
+    const { contracts, funding } = await getMarketActivityRows()
+    const contractLatest = latestDated(contracts, 'awarded_date')
+    const fundingLatest = latestDated(funding, 'announced_date')
+    const known = knownAmountSummary(
+      [
+        ...contracts.map(r => ({ ...r, _date: r.awarded_date })),
+        ...funding.map(r => ({ ...r, _date: r.announced_date })),
+      ],
+      '_date'
+    )
+    activityHost.innerHTML = [
+      activityCard({
+        chip: 'C',
+        badge: 'Contracts',
+        value: String(contracts.length),
+        detail: 'Contract records',
+        date: contractLatest?.date,
+        url: contractLatest?.source_url,
+      }),
+      activityCard({
+        chip: 'F',
+        badge: 'Funding rounds',
+        value: String(funding.length),
+        detail: 'Funding round records',
+        date: fundingLatest?.date,
+        url: fundingLatest?.source_url,
+      }),
+      activityCard({
+        chip: 'Σ',
+        badge: 'Known amounts',
+        value: known.text,
+        detail: `${known.known} known amount${known.known === 1 ? '' : 's'}`,
+        date: known.latest?.date,
+        url: known.latest?.source_url,
+      }),
+    ].join('')
+  } catch (e) {
+    console.error('[market activity]', e)
+    activityHost.innerHTML = '<p class="cx-pending">Activity could not be loaded.</p>'
+  }
+}
+
+// =====================================================================
 // INIT
 // =====================================================================
 document.addEventListener('DOMContentLoaded', () => {
@@ -857,6 +1064,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderVerified()
   renderFeaturedProviders()
   renderMarketplace()
+  renderMarketDiscovery()
   if (new URLSearchParams(location.search).get('actor')) renderActorFiche()
   bindAssessment()
 })

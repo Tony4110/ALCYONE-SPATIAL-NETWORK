@@ -494,6 +494,8 @@
   .cx-badge-muted{color:var(--faint);background:transparent;border:1px solid var(--line)}
   .cx-card h3{font-family:var(--serif);font-weight:500;font-size:18px;line-height:1.25;letter-spacing:-.2px}
   .cx-meta{font-family:var(--mono);font-size:11.5px;color:var(--muted);letter-spacing:.15px;line-height:1.45}
+  .md-sum{color:var(--muted);font-size:14px;line-height:1.5}
+  .cx-card>.badge{align-self:flex-start}
   .cx-tags{display:flex;flex-wrap:wrap;gap:6px;min-height:22px}
   .cx-tags span{
     font-family:var(--mono);font-size:10px;letter-spacing:.4px;text-transform:uppercase;
@@ -568,12 +570,13 @@
       <div><b>Alcyone</b><small>SPACE INTELLIGENCE</small></div>
     </div>
     <div class="nav-links">
+      <a data-v="landing" class="active" href="/" onclick="show('landing');return false;">Index</a>
+      <a data-v="market" href="/?view=market" onclick="show('market');return false;">Market</a>
       <a data-v="search" href="/?view=search" onclick="show('search');return false;">Search</a>
       <a data-v="marketplace" href="/?view=marketplace" onclick="show('marketplace');return false;">Marketplace</a>
       <a href="/#cx-compare" onclick="goSearch('cx-compare');return false;">Compare</a>
       <a href="/#cx-guides" onclick="goSearch('cx-guides');return false;">Guides</a>
       <a data-v="assessment" href="/?view=assessment" onclick="show('assessment');return false;">Assessment</a>
-      <a data-v="landing" class="active" href="/" onclick="show('landing');return false;">Index</a>
     </div>
     <div class="live"><span class="dot"></span><b>LIVE</b><span id="clock"> · --:--:-- UTC</span></div>
     <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch to light theme">
@@ -933,8 +936,40 @@
   </div>
 </section>
 
-<!-- ============ MARKET ============ -->
+<!-- ============ MARKET DISCOVERY ============ -->
 <section class="view" id="market">
+  <div class="wrap">
+    <div class="page-head">
+      <div class="kicker">Market discovery</div>
+      <h2>Market</h2>
+      <p class="lead" style="margin-top:12px">What changed, who is in the market, and the activity on record — each figure dated and sourced.</p>
+    </div>
+
+    <section class="cx-section">
+      <div class="cx-section-h"><div class="cx-label">// what changed</div></div>
+      <div class="cx-grid" id="md-signals" aria-live="polite">
+        <p class="cx-pending">Loading signals…</p>
+      </div>
+    </section>
+
+    <section class="cx-section">
+      <div class="cx-section-h"><div class="cx-label">// companies</div></div>
+      <div class="cx-grid" id="md-companies" aria-live="polite">
+        <p class="cx-pending">Loading companies…</p>
+      </div>
+    </section>
+
+    <section class="cx-section">
+      <div class="cx-section-h"><div class="cx-label">// market activity</div></div>
+      <div class="cx-grid" id="md-activity" aria-live="polite">
+        <p class="cx-pending">Loading activity…</p>
+      </div>
+    </section>
+  </div>
+</section>
+
+<!-- ============ SPACE MARKET (operators) ============ -->
+<section class="view" id="space-market">
   <div class="wrap">
     <div class="page-head">
       <div class="kicker">The market map</div>
