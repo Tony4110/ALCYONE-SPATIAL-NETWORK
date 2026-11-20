@@ -431,6 +431,31 @@
   .cx-networks{--cx:var(--violet);--cx-soft:var(--violet-soft)}
   .cx-comparisons{--cx:var(--gold);--cx-soft:rgba(232,182,90,.14)}
   .cx-intelligence{--cx:var(--accent);--cx-soft:var(--accent-soft)}
+  /* Home only — chip, CTA, and the section type tag. */
+  #search .cx-providers .cx-chip{background:rgba(159,196,255,.18);color:#9FC4FF}
+  #search .cx-providers .cx-cta{color:#9FC4FF}
+  #search .cx-providers .cx-cta-gold{color:#E8B65A}
+  #search .cx-networks .cx-chip{background:rgba(185,167,255,.18);color:#B9A7FF}
+  #search .cx-networks .cx-cta{color:#B9A7FF}
+  #search .cx-networks .cx-badge-accent{color:#B9A7FF;background:rgba(185,167,255,.18)}
+  #search .cx-comparisons .cx-chip{background:rgba(232,182,90,.16);color:#E8B65A}
+  #search .cx-comparisons .cx-cta{color:#E8B65A}
+  #search .cx-comparisons .cx-badge-accent{color:#E8B65A;background:rgba(232,182,90,.16)}
+  #search .cx-intelligence .cx-chip{background:rgba(159,196,255,.18);color:#9FC4FF}
+  #search .cx-intelligence .cx-cta{color:#9FC4FF}
+  [data-theme="light"] #search .cx-providers .cx-chip,
+  [data-theme="light"] #search .cx-intelligence .cx-chip{background:var(--accent-soft);color:var(--accent)}
+  [data-theme="light"] #search .cx-providers .cx-cta,
+  [data-theme="light"] #search .cx-intelligence .cx-cta{color:var(--accent)}
+  [data-theme="light"] #search .cx-providers .cx-cta-gold{color:var(--gold)}
+  [data-theme="light"] #search .cx-networks .cx-chip{background:var(--violet-soft);color:var(--violet)}
+  [data-theme="light"] #search .cx-networks .cx-cta,
+  [data-theme="light"] #search .cx-networks .cx-badge-accent{color:var(--violet)}
+  [data-theme="light"] #search .cx-networks .cx-badge-accent{background:var(--violet-soft)}
+  [data-theme="light"] #search .cx-comparisons .cx-chip{background:rgba(176,122,18,.14);color:var(--gold)}
+  [data-theme="light"] #search .cx-comparisons .cx-cta,
+  [data-theme="light"] #search .cx-comparisons .cx-badge-accent{color:var(--gold)}
+  [data-theme="light"] #search .cx-comparisons .cx-badge-accent{background:rgba(176,122,18,.14)}
   .cx-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
   .cx-chip{
     width:40px;height:40px;border-radius:11px;flex-shrink:0;
