@@ -192,6 +192,29 @@
   .hero-scores{display:contents}
   .hero-scores .cards4{margin-top:0;grid-column:2;grid-row:1}
   .hero-scores .score-briefs{grid-column:1 / -1;margin-top:0}
+  .hero-scores .idx-find{grid-column:1 / -1;margin:22px 0 4px}
+  .idx-find-row{
+    display:flex;align-items:center;gap:10px;
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px 6px 6px 16px;
+  }
+  .idx-find-label{
+    font-family:var(--mono);font-size:11px;letter-spacing:1.4px;font-weight:500;
+    color:var(--up);white-space:nowrap;flex-shrink:0;
+  }
+  .idx-find select,.idx-find input{
+    font-family:var(--sans);color:var(--text);background:transparent;border:none;outline:none;
+  }
+  .idx-find select{
+    font-family:var(--mono);font-size:12px;flex-shrink:0;
+    border-right:1px solid var(--line);padding:8px 12px;cursor:pointer;color-scheme:dark;
+  }
+  [data-theme="light"] .idx-find select{color-scheme:light}
+  .idx-find input{flex:1;min-width:0;font-size:14.5px;padding:8px 10px}
+  .idx-find input::placeholder{color:var(--faint)}
+  .idx-find .btn{background:var(--up);color:#04140c;box-shadow:none;flex-shrink:0;white-space:nowrap}
+  .idx-find .btn:hover{transform:translateY(-1px)}
+  [data-theme="light"] .idx-find .btn{color:#fff}
+  .idx-find-note{font-family:var(--mono);font-size:11px;color:var(--faint);margin-top:8px;letter-spacing:.2px}
   .ticker{margin-top:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:14px 0;overflow:hidden;white-space:nowrap;mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
   .ticker span{font-family:var(--mono);font-size:12.5px;color:var(--muted);padding:0 26px;display:inline-block;animation:scroll 38s linear infinite}
   .ticker b{color:var(--up)}.ticker i{color:var(--gold);font-style:normal}
@@ -522,6 +545,9 @@
     .hero{padding:36px 0 32px}
     .hero-index-val{font-size:clamp(72px,18vw,110px)}
     .hero-dash{gap:22px}
+    .idx-find-row{flex-direction:column;align-items:stretch;padding:10px}
+    .idx-find select{border-right:none;border-bottom:1px solid var(--line)}
+    .idx-find .btn{width:100%}
     .cx-hero{padding:40px 0 12px}
     .cx-search{flex-direction:column;align-items:stretch;gap:0;padding:8px}
     .cx-search-industry{border-right:none;border-bottom:1px solid var(--line);padding:8px 10px 10px}
@@ -537,17 +563,17 @@
 
 <nav>
   <div class="nav-inner">
-    <div class="brand" onclick="show('search')">
+    <div class="brand" onclick="show('landing')">
       <div class="star-mark"><span></span><span></span></div>
       <div><b>Alcyone</b><small>SPACE INTELLIGENCE</small></div>
     </div>
     <div class="nav-links">
-      <a data-v="search" class="active" href="/" onclick="show('search');return false;">Search</a>
+      <a data-v="search" href="/?view=search" onclick="show('search');return false;">Search</a>
       <a data-v="marketplace" href="/?view=marketplace" onclick="show('marketplace');return false;">Marketplace</a>
       <a href="/#cx-compare" onclick="goSearch('cx-compare');return false;">Compare</a>
       <a href="/#cx-guides" onclick="goSearch('cx-guides');return false;">Guides</a>
       <a data-v="assessment" href="/?view=assessment" onclick="show('assessment');return false;">Assessment</a>
-      <a data-v="landing" href="/?view=index" onclick="show('landing');return false;">Index</a>
+      <a data-v="landing" class="active" href="/" onclick="show('landing');return false;">Index</a>
     </div>
     <div class="live"><span class="dot"></span><b>LIVE</b><span id="clock"> · --:--:-- UTC</span></div>
     <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch to light theme">
@@ -558,7 +584,7 @@
 </nav>
 
 <!-- ============ SEARCH (home) ============ -->
-<section class="view active" id="search">
+<section class="view" id="search">
   <div class="cx-hero">
     <div class="cx-hero-sky" aria-hidden="true"></div>
     <div class="wrap">
@@ -733,7 +759,7 @@
 </section>
 
 <!-- ============ LANDING ============ -->
-<section class="view" id="landing">
+<section class="view active" id="landing">
   <div class="wrap hero">
     <h1>Understand the Space Economy in <em>3 minutes</em></h1>
     <div class="hero-dash">
@@ -744,6 +770,22 @@
       </div>
       <div class="hero-scores">
         <div class="cards4 stagger"></div>
+        <form class="idx-find" id="idx-find" role="search">
+          <div class="idx-find-row">
+            <span class="idx-find-label">FIND CONNECTIVITY</span>
+            <select name="sector" aria-label="Sector">
+              <option selected>Maritime</option>
+              <option>Aviation</option>
+              <option>Offshore/Energy</option>
+              <option>Remote/Industry</option>
+              <option>All networks</option>
+            </select>
+            <input type="search" name="q" autocomplete="off" aria-label="Describe your need" placeholder="Describe your need — e.g. “yacht in the Med, 50 Mbps, always-on”…">
+            <button class="btn" type="submit">Search →</button>
+          </div>
+          <p class="idx-find-note">Operator-neutral · free shortlist in minutes</p>
+        </form>
+        <div class="score-briefs"></div>
       </div>
     </div>
   </div>
@@ -1164,8 +1206,8 @@
   function syncViewUrl(id){
     try {
       const q = new URLSearchParams(location.search);
-      if (id === 'search') q.delete('view');
-      else if (id === 'landing') q.set('view', 'index');
+      if (id === 'landing') q.delete('view');
+      else if (id === 'search') q.set('view', 'search');
       else q.set('view', id);
       if (id !== 'actor') q.delete('actor');
       if (id !== 'verified') q.delete('claim');
@@ -1201,12 +1243,33 @@
     e.preventDefault();
     show('marketplace');
   });
-  // Deep link: search is the default. Index stays at ?view=index.
-  // Assessment + claim links from static pages keep working.
+  document.getElementById('idx-find')?.addEventListener('submit', function(e){
+    e.preventDefault();
+    const sector = String(this.elements.sector.value || '');
+    const query = String(this.elements.q.value || '');
+    const form = document.getElementById('cx-search-form');
+    if (form) {
+      const sel = form.elements.industry;
+      const mapped = {
+        'Maritime':'Maritime',
+        'Aviation':'Aviation',
+        'Offshore/Energy':'Energy & Mining',
+        'Remote/Industry':'Remote Enterprise'
+      }[sector];
+      if (sel && mapped) {
+        const opt = Array.from(sel.options).find(o => o.value === mapped || o.text === mapped);
+        if (opt) sel.value = opt.value;
+      }
+      if (form.elements.q) form.elements.q.value = query;
+    }
+    show('search');
+  });
+  // Deep link: Index is the default at /. Search stays at ?view=search.
+  // ?view=index still opens the Index. Assessment + claim links keep working.
   (function(){
     const q = new URLSearchParams(location.search);
     const requested = q.get('view') || (location.hash || '').replace(/^#/, '');
-    const map = { index:'landing', search:'search', home:'search' };
+    const map = { index:'landing', search:'search', connectivity:'search', home:'landing' };
     if (q.get('actor') && document.getElementById('actor')) {
       show('actor');
     } else if (requested === 'cx-compare' || requested === 'cx-guides') {
@@ -1214,7 +1277,7 @@
     } else {
       const id = map[requested] || requested;
       const el = id && document.getElementById(id);
-      if (el && el.classList.contains('view') && id !== 'search') show(id);
+      if (el && el.classList.contains('view') && id !== 'landing') show(id);
     }
     if (requested !== 'assessment' || !document.getElementById('assessment')) return;
     const sector = q.get('sector');
