@@ -127,6 +127,19 @@
   }
   .nav-links a:hover{color:var(--text);background:var(--panel)}
   .nav-links a.active{color:var(--text);background:var(--accent-soft)}
+  .nav-links a.nav-cta{
+    background:var(--accent);color:#06131f;font-weight:600;
+    box-shadow:0 0 0 1px rgba(111,168,255,.4),0 8px 24px -8px rgba(111,168,255,.6);
+  }
+  .nav-links a.nav-cta:hover{color:#06131f;background:var(--accent);transform:translateY(-1px)}
+  .nav-links a.nav-cta.active{color:#06131f;background:var(--accent)}
+  .cx-tabs{display:flex;gap:4px;flex-wrap:wrap;max-width:1180px;margin:0 auto;padding:18px 28px 0}
+  .cx-tabs a{
+    color:var(--muted);text-decoration:none;font-size:13.5px;font-weight:500;
+    padding:8px 14px;border-radius:8px;cursor:pointer;transition:.18s;
+  }
+  .cx-tabs a:hover{color:var(--text);background:var(--panel)}
+  .cx-tabs a.active{color:var(--text);background:var(--accent-soft)}
   .btn{
     font-family:var(--sans);font-weight:600;font-size:13.5px;cursor:pointer;
     border:none;border-radius:9px;padding:10px 18px;transition:.18s;text-decoration:none;display:inline-block;
@@ -358,6 +371,9 @@
   .v-form select{font-family:var(--sans);font-size:14.5px;color:var(--text);background:var(--ink);border:1px solid var(--line-2);border-radius:9px;padding:10px 12px;width:100%;color-scheme:dark}
   .v-form select:focus{outline:none;border-color:var(--accent)}
   [data-theme="light"] nav{background:rgba(248,250,252,.92)}
+  [data-theme="light"] .nav-links a.nav-cta,
+  [data-theme="light"] .nav-links a.nav-cta:hover,
+  [data-theme="light"] .nav-links a.nav-cta.active{color:#fff}
   [data-theme="light"] .v-modal{background:rgba(15,23,42,.4)}
   [data-theme="light"] .btn-primary{color:#fff;box-shadow:0 0 0 1px rgba(55,48,163,.35),0 8px 24px -8px rgba(55,48,163,.4)}
   [data-theme="light"] .btn-primary:hover{box-shadow:0 0 0 1px rgba(55,48,163,.5),0 12px 30px -8px rgba(55,48,163,.45)}
@@ -570,13 +586,10 @@
       <div><b>Alcyone</b><small>SPACE INTELLIGENCE</small></div>
     </div>
     <div class="nav-links">
-      <a data-v="landing" class="active" href="/" onclick="show('landing');return false;">Index</a>
       <a data-v="market" href="/?view=market" onclick="show('market');return false;">Market</a>
-      <a data-v="search" href="/?view=search" onclick="show('search');return false;">Search</a>
-      <a data-v="marketplace" href="/?view=marketplace" onclick="show('marketplace');return false;">Marketplace</a>
-      <a href="/#cx-compare" onclick="goSearch('cx-compare');return false;">Compare</a>
-      <a href="/#cx-guides" onclick="goSearch('cx-guides');return false;">Guides</a>
-      <a data-v="assessment" href="/?view=assessment" onclick="show('assessment');return false;">Assessment</a>
+      <a data-v="connectivity" href="/?view=search" onclick="showConnectivity('search');return false;">Connectivity</a>
+      <a data-v="guides" href="/?view=search#cx-guides" onclick="goSearch('cx-guides');return false;">Guides</a>
+      <a class="nav-cta" data-v="assessment" href="/?view=assessment" onclick="show('assessment');return false;">Assessment</a>
     </div>
     <div class="live"><span class="dot"></span><b>LIVE</b><span id="clock"> · --:--:-- UTC</span></div>
     <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch to light theme">
@@ -588,6 +601,11 @@
 
 <!-- ============ SEARCH (home) ============ -->
 <section class="view" id="search">
+  <div class="cx-tabs" data-cx-tabs>
+    <a data-cx="search" href="/?view=search" onclick="showConnectivity('search');return false;">Search</a>
+    <a data-cx="marketplace" href="/?view=marketplace" onclick="showConnectivity('marketplace');return false;">Marketplace</a>
+    <a data-cx="compare" href="/?view=search#cx-compare" onclick="showConnectivity('compare');return false;">Compare</a>
+  </div>
   <div class="cx-hero">
     <div class="cx-hero-sky" aria-hidden="true"></div>
     <div class="wrap">
@@ -1093,6 +1111,11 @@
 
 <!-- ============ MARKETPLACE ============ -->
 <section class="view" id="marketplace">
+  <div class="cx-tabs" data-cx-tabs>
+    <a data-cx="search" href="/?view=search" onclick="showConnectivity('search');return false;">Search</a>
+    <a data-cx="marketplace" href="/?view=marketplace" onclick="showConnectivity('marketplace');return false;">Marketplace</a>
+    <a data-cx="compare" href="/?view=search#cx-compare" onclick="showConnectivity('compare');return false;">Compare</a>
+  </div>
   <div class="wrap">
     <div class="page-head">
       <div class="kicker">Connectivity marketplace</div>
@@ -1253,14 +1276,26 @@
       if (next !== cur) history.replaceState(null, '', next);
     } catch (e) {}
   }
-  function show(id){
+  let navIntent = null;
+  function applyNav(id){
+    const connectivity = id === 'search' || id === 'marketplace' || id === 'actor';
+    document.querySelectorAll('.nav-links a').forEach(a=>{
+      const v = a.dataset.v;
+      const on = navIntent === 'guides' ? v === 'guides' : (v === 'connectivity' ? connectivity : v === id);
+      a.classList.toggle('active', on);
+    });
+    const tab = navIntent === 'compare' ? 'compare' : (id === 'marketplace' || id === 'actor' ? 'marketplace' : 'search');
+    document.querySelectorAll('[data-cx-tabs] a').forEach(a=>{
+      a.classList.toggle('active', a.dataset.cx === tab);
+    });
+  }
+  function show(id, opts){
     const v = document.getElementById(id);
     if (!v) return;
+    if (!(opts && opts.keepIntent)) navIntent = null;
     document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
     v.classList.add('active');
-    document.querySelectorAll('.nav-links a').forEach(a=>{
-      a.classList.toggle('active', a.dataset.v===id);
-    });
+    applyNav(id);
     // re-trigger stagger animation
     v.querySelectorAll('.stagger').forEach(s=>{
       s.querySelectorAll('*').forEach(el=>{el.style.animation='none';el.offsetHeight;el.style.animation='';});
@@ -1269,10 +1304,16 @@
     window.scrollTo({top:0,behavior:'instant'});
   }
   function goSearch(anchor){
-    show('search');
+    navIntent = anchor === 'cx-guides' ? 'guides' : (anchor === 'cx-compare' ? 'compare' : null);
+    show('search', {keepIntent:true});
     const el = document.getElementById(anchor);
     if (!el) return;
     requestAnimationFrame(function(){ el.scrollIntoView({behavior:'smooth', block:'start'}); });
+  }
+  function showConnectivity(tab){
+    if (tab === 'marketplace') show('marketplace');
+    else if (tab === 'compare') goSearch('cx-compare');
+    else show('search');
   }
   document.getElementById('cx-search-form')?.addEventListener('submit', function(e){
     e.preventDefault();
