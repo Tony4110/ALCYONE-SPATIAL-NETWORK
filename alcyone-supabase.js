@@ -845,46 +845,60 @@ async function renderActorFiche() {
 }
 
 // =====================================================================
-// MARKET DISCOVERY — signals, companies, activity totals
+// MARKET DISCOVERY — pulse, filters, what changed, companies, digest
 // =====================================================================
-async function getMarketSignals() {
-  const { data, error } = await supabase
-    .from('market_signals')
-    .select('signal_type, title, summary, event_date, source_url, confidence')
-    .order('event_date', { ascending: false })
-  if (error) throw error
-  return data ?? []
+const MD_TYPE_ORDER = ['funding', 'contract', 'infrastructure', 'partnership', 'acquisition', 'ipo']
+const MD_MARKET_ORDER = ['connectivity', 'launch', 'earth_observation', 'infrastructure', 'exploration']
+const MD_TYPE_LABEL = {
+  funding: 'Funding',
+  contract: 'Contracts',
+  infrastructure: 'Infrastructure',
+  partnership: 'Partnerships',
+  acquisition: 'Acquisitions',
+  ipo: 'IPO',
 }
-
-async function getMarketDiscoveryActors() {
-  const { data, error } = await supabase
-    .from('actors')
-    .select('name, company_type, hq_country, short_description, website, source_url, last_verified_at')
-    .eq('in_market_discovery', true)
-    .order('name', { ascending: true })
-  if (error) throw error
-  return data ?? []
+const MD_MARKET_LABEL = {
+  connectivity: 'Connectivity',
+  launch: 'Launch',
+  earth_observation: 'Earth Obs',
+  infrastructure: 'Infrastructure',
+  exploration: 'Exploration',
 }
-
-async function getMarketActivityRows() {
-  const [contracts, funding] = await Promise.all([
-    supabase.from('contracts').select('amount_eur, currency, awarded_date, source_url'),
-    supabase.from('funding_rounds').select('amount_eur, currency, announced_date, source_url'),
-  ])
-  if (contracts.error) throw contracts.error
-  if (funding.error) throw funding.error
-  return { contracts: contracts.data ?? [], funding: funding.data ?? [] }
+const MD_TYPE_TONE = {
+  funding: 'md-funding',
+  contract: 'md-contract',
+  infrastructure: 'md-infrastructure',
+  partnership: 'md-partnership',
 }
+const MD_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const mdState = { type: 'all', market: 'all', signals: [] }
+let mdFiltersBound = false
+let mdDigestBound = false
 
 function isoDate(value) {
   const s = String(value ?? '').slice(0, 10)
   return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : ''
 }
 
-function sourceLink(url, label) {
-  const href = safeHttpUrl(url)
-  if (!href) return `<span class="cx-cta" style="cursor:default">No source</span>`
-  return `<a class="cx-cta" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>`
+function formatEventDate(value) {
+  const iso = isoDate(value)
+  if (!iso) return '—'
+  const [year, month, day] = iso.split('-')
+  return `${Number(day)} ${MD_MONTHS[Number(month) - 1]} ${year}`
+}
+
+function mdKey(value) {
+  return String(value ?? '').trim().toLowerCase()
+}
+
+function mdTypeLabel(value) {
+  const key = mdKey(value)
+  return MD_TYPE_LABEL[key] || labelize(key || 'Signal')
+}
+
+function mdMarketLabel(value) {
+  const key = mdKey(value)
+  return MD_MARKET_LABEL[key] || labelize(key || 'Market')
 }
 
 function confidenceBadge(value) {
@@ -895,160 +909,272 @@ function confidenceBadge(value) {
   return { cls: 'cx-badge-muted', label: v ? labelize(v) : '—' }
 }
 
-function latestDated(rows, dateKey) {
-  let best = null
-  for (const row of rows) {
-    const d = isoDate(row[dateKey])
-    if (!d) continue
-    if (!best || d > best.date) best = { date: d, source_url: row.source_url }
-  }
-  return best
+function formatCount(value) {
+  if (value == null || !Number.isFinite(Number(value))) return '—'
+  return Number(value).toLocaleString('en-US')
 }
 
-function formatMoney(amount, currency) {
-  const code = currency || 'USD'
-  try {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: code, maximumFractionDigits: 0 }).format(amount)
-  } catch {
-    return `${code} ${Math.round(amount).toLocaleString('en-US')}`
-  }
+function setMarketCount(key, value) {
+  const el = document.querySelector(`#md-pulse [data-md-count="${key}"]`)
+  if (el) el.textContent = formatCount(value)
 }
 
-function knownAmountSummary(rows, dateKey) {
-  const sums = {}
-  let known = 0
-  let latest = null
+function orderedKeys(rows, field, preferred) {
+  const present = new Set()
   for (const row of rows) {
-    if (row.amount_eur == null || row.amount_eur === '') continue
-    const n = Number(row.amount_eur)
-    if (!Number.isFinite(n)) continue
-    known++
-    const code = row.currency || 'USD'
-    sums[code] = (sums[code] || 0) + n
-    const d = isoDate(row[dateKey])
-    if (d && (!latest || d > latest.date)) latest = { date: d, source_url: row.source_url }
+    const key = mdKey(row[field])
+    if (key) present.add(key)
   }
-  const text = Object.entries(sums).map(([code, total]) => formatMoney(total, code)).join(' · ')
-  return { known, text: text || '—', latest }
+  const known = preferred.filter(key => present.has(key))
+  const rest = [...present].filter(key => !known.includes(key)).sort((a, b) => a.localeCompare(b))
+  return known.concat(rest)
+}
+
+function mdIcon(type) {
+  const paths = {
+    funding: '<path d="M12 3v18"/><path d="M16.5 7.2c0-1.9-1.9-3.2-4.5-3.2S7.5 5.2 7.5 7c0 1.7 1.5 2.6 4.5 3.2s4.5 1.5 4.5 3.3-2 3.3-4.5 3.3-4.5-1.3-4.5-3.2"/>',
+    contract: '<path d="M7 3.5h7.2L18.5 8v11.2a1.3 1.3 0 0 1-1.3 1.3H7A1.3 1.3 0 0 1 5.7 19.2V4.8A1.3 1.3 0 0 1 7 3.5z"/><path d="M14 3.6V8h4.4"/><path d="M8.5 13h7M8.5 16.5h4.5"/>',
+    infrastructure: '<path d="M4 20.5h16"/><path d="M6.5 20.5V10.2L12 4.5l5.5 5.7v10.3"/><path d="M10.2 20.5v-5h3.6v5"/>',
+    partnership: '<path d="M8.2 12h7.6"/><circle cx="6" cy="12" r="2.2"/><circle cx="18" cy="12" r="2.2"/>',
+  }
+  const body = paths[type] || '<circle cx="12" cy="12" r="2.4"/><path d="M12 4.5v2.2M12 17.3v2.2M4.5 12h2.2M17.3 12h2.2"/>'
+  return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`
+}
+
+function sourceLink(url) {
+  const href = safeHttpUrl(url)
+  if (!href) return ''
+  return `<a class="cx-cta" href="${esc(href)}" target="_blank" rel="noopener noreferrer">Source →</a>`
 }
 
 function signalCard(row) {
-  const type = labelize(row.signal_type || 'Signal')
-  const initial = (type.trim().charAt(0) || '•').toUpperCase()
+  const typeKey = mdKey(row.signal_type)
+  const tone = MD_TYPE_TONE[typeKey] || 'md-other'
   const confidence = confidenceBadge(row.confidence)
-  const date = isoDate(row.event_date) || '—'
-  return `<article class="cx-card cx-providers">
+  const summary = String(row.summary ?? '').trim()
+  return `<article class="cx-card cx-providers md-signal ${tone}">
     <div class="cx-card-top">
-      <div class="cx-chip" aria-hidden="true">${esc(initial)}</div>
-      <span class="cx-badge cx-badge-accent">${esc(type)}</span>
+      <div class="cx-chip" aria-hidden="true">${mdIcon(typeKey)}</div>
+      <span class="cx-badge cx-badge-accent">${esc(mdTypeLabel(typeKey))}</span>
     </div>
     <h3>${esc(row.title || 'Signal')}</h3>
-    <p class="md-sum">${esc(row.summary || '—')}</p>
-    <p class="cx-meta">${esc(date)}</p>
-    <span class="badge ${confidence.cls}">${esc(confidence.label)}</span>
-    ${sourceLink(row.source_url, 'Source →')}
+    ${summary ? `<p class="md-sum">${esc(summary)}</p>` : ''}
+    <div class="md-meta">
+      <span>${esc(formatEventDate(row.event_date))}</span>
+      <span class="badge ${confidence.cls}">${esc(confidence.label)}</span>
+      ${sourceLink(row.source_url)}
+    </div>
   </article>`
 }
 
-function companyCard(row) {
-  const name = row.name || 'Company'
-  const initial = (name.trim().charAt(0) || '•').toUpperCase()
-  const type = row.company_type ? labelize(row.company_type) : '—'
-  const date = isoDate(row.last_verified_at) || '—'
-  const website = safeHttpUrl(row.website)
-  return `<article class="cx-card cx-providers">
-    <div class="cx-card-top">
-      <div class="cx-chip" aria-hidden="true">${esc(initial)}</div>
-      <span class="cx-badge cx-badge-accent">${esc(type)}</span>
-    </div>
-    <h3>${esc(name)}</h3>
-    <p class="cx-meta">${esc(row.hq_country || '—')}</p>
-    <p class="md-sum">${esc(row.short_description || '—')}</p>
-    <p class="cx-meta">${esc(date)}</p>
-    ${website ? sourceLink(website, 'Website →') : sourceLink(row.source_url, 'Source →')}
+function filteredSignals() {
+  return mdState.signals.filter(row => {
+    const typeOk = mdState.type === 'all' || mdKey(row.signal_type) === mdState.type
+    const marketOk = mdState.market === 'all' || mdKey(row.market) === mdState.market
+    return typeOk && marketOk
+  })
+}
+
+function filterChip(kind, value, label) {
+  const active = mdState[kind] === value
+  return `<button type="button" class="md-chip${active ? ' active' : ''}" data-md-filter="${kind}" data-md-value="${esc(value)}" aria-pressed="${active ? 'true' : 'false'}">${esc(label)}</button>`
+}
+
+function renderMarketFilters() {
+  const host = document.getElementById('md-filters')
+  if (!host) return
+  const types = orderedKeys(mdState.signals, 'signal_type', MD_TYPE_ORDER)
+  const markets = orderedKeys(mdState.signals, 'market', MD_MARKET_ORDER)
+  const typeChips = [filterChip('type', 'all', 'All')].concat(types.map(key => filterChip('type', key, mdTypeLabel(key))))
+  const marketChips = [filterChip('market', 'all', 'All')].concat(markets.map(key => filterChip('market', key, mdMarketLabel(key))))
+  host.innerHTML = `<div class="md-filter-row" role="group" aria-label="Signal type">${typeChips.join('')}</div>
+    <div class="md-filter-row" role="group" aria-label="Market">${marketChips.join('')}</div>`
+}
+
+function renderMarketSignals() {
+  const host = document.getElementById('md-signals')
+  if (!host) return
+  const rows = filteredSignals()
+  if (!mdState.signals.length) {
+    host.innerHTML = '<p class="cx-pending">No signals dated yet.</p>'
+    return
+  }
+  host.innerHTML = rows.length
+    ? rows.map(signalCard).join('')
+    : '<p class="cx-pending">Nothing matches these filters.</p>'
+}
+
+function setFreshness(rows) {
+  const el = document.getElementById('md-fresh')
+  if (!el) return
+  let latest = ''
+  for (const row of rows) {
+    const date = isoDate(row.event_date)
+    if (date && date > latest) latest = date
+  }
+  el.textContent = latest
+    ? `Updated weekly · last update ${formatEventDate(latest)}`
+    : 'Updated weekly'
+}
+
+function tallyActorEvents(contracts, funding, signals) {
+  const counts = new Map()
+  const add = (id) => {
+    if (id == null || id === '') return
+    const key = String(id)
+    counts.set(key, (counts.get(key) || 0) + 1)
+  }
+  for (const row of contracts) add(row.actor_id)
+  for (const row of funding) add(row.actor_id)
+  for (const row of signals) add(row.actor_id)
+  return counts
+}
+
+function companyCard(row, count, eventsKnown) {
+  const type = row.company_type ? labelize(row.company_type) : ''
+  const country = row.hq_country ? String(row.hq_country) : ''
+  const meta = [type, country].filter(Boolean).join(' · ') || '—'
+  const events = eventsKnown
+    ? `${count} event${count === 1 ? '' : 's'} →`
+    : '— events →'
+  return `<article class="cx-card cx-providers md-company">
+    <h3>${esc(row.name || 'Company')}</h3>
+    <p class="cx-meta">${esc(meta)}</p>
+    <p class="md-events">${esc(events)}</p>
   </article>`
 }
 
-function activityCard({ chip, badge, value, detail, date, url }) {
-  return `<article class="cx-card cx-providers">
-    <div class="cx-card-top">
-      <div class="cx-chip" aria-hidden="true">${esc(chip)}</div>
-      <span class="cx-badge cx-badge-accent">${esc(badge)}</span>
-    </div>
-    <h3>${esc(value)}</h3>
-    <p class="md-sum">${esc(detail)}</p>
-    <p class="cx-meta">${esc(date || '—')}</p>
-    ${sourceLink(url, 'Source →')}
-  </article>`
+async function fetchCounted(query) {
+  const { data, error, count } = await query
+  if (error) throw error
+  return { data: data ?? [], count: count ?? (data ? data.length : 0) }
+}
+
+function bindMarketFilters() {
+  if (mdFiltersBound) return
+  const host = document.getElementById('md-filters')
+  if (!host) return
+  mdFiltersBound = true
+  host.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-md-filter]')
+    if (!button) return
+    const kind = button.dataset.mdFilter
+    const value = button.dataset.mdValue
+    if ((kind !== 'type' && kind !== 'market') || !value || mdState[kind] === value) return
+    mdState[kind] = value
+    renderMarketFilters()
+    renderMarketSignals()
+  })
+}
+
+function showDigestNote(message, state) {
+  const note = document.getElementById('md-digest-note')
+  if (!note) return
+  note.hidden = false
+  note.dataset.state = state
+  note.textContent = message
+}
+
+async function submitDigest(event) {
+  event.preventDefault()
+  const form = event.currentTarget
+  const input = form.querySelector('input[type="email"]')
+  const button = form.querySelector('button')
+  const email = String(input?.value || '').trim().toLowerCase()
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showDigestNote('Enter a valid email.', 'error')
+    return
+  }
+  button.disabled = true
+  const previous = button.textContent
+  button.textContent = 'Subscribing…'
+  const note = document.getElementById('md-digest-note')
+  if (note) note.hidden = true
+  const { error } = await supabase.from('digest_subscribers').insert({ email })
+  if (!error || error.code === '23505') {
+    form.hidden = true
+    showDigestNote(
+      error ? 'You’re already subscribed. What Changed arrives every Monday.' : 'You’re subscribed. What Changed arrives every Monday.',
+      'ok'
+    )
+    return
+  }
+  console.error('[digest]', error)
+  button.disabled = false
+  button.textContent = previous
+  showDigestNote('We couldn’t save that email. Please try again.', 'error')
+}
+
+function bindDigestForm() {
+  if (mdDigestBound) return
+  const form = document.getElementById('md-digest-form')
+  if (!form) return
+  mdDigestBound = true
+  form.addEventListener('submit', submitDigest)
 }
 
 async function renderMarketDiscovery() {
   const signalsHost = document.getElementById('md-signals')
   const companiesHost = document.getElementById('md-companies')
-  const activityHost = document.getElementById('md-activity')
-  if (!signalsHost || !companiesHost || !activityHost) return
+  if (!signalsHost || !companiesHost) return
+  bindMarketFilters()
+  bindDigestForm()
 
-  try {
-    const rows = await getMarketSignals()
-    signalsHost.innerHTML = rows.length
-      ? rows.map(signalCard).join('')
-      : '<p class="cx-pending">No signals dated yet.</p>'
-  } catch (e) {
-    console.error('[market signals]', e)
+  const [actorsRes, signalsRes, contractsRes, fundingRes] = await Promise.allSettled([
+    fetchCounted(
+      supabase.from('actors')
+        .select('id, name, company_type, hq_country', { count: 'exact' })
+        .eq('in_market_discovery', true)
+        .order('name', { ascending: true })
+    ),
+    fetchCounted(
+      supabase.from('market_signals')
+        .select('signal_type, title, summary, event_date, source_url, confidence, market, actor_id', { count: 'exact' })
+        .order('event_date', { ascending: false, nullsFirst: false })
+    ),
+    fetchCounted(supabase.from('contracts').select('actor_id', { count: 'exact' })),
+    fetchCounted(supabase.from('funding_rounds').select('actor_id', { count: 'exact' })),
+  ])
+
+  const actors = actorsRes.status === 'fulfilled' ? actorsRes.value : null
+  const signals = signalsRes.status === 'fulfilled' ? signalsRes.value : null
+  const contracts = contractsRes.status === 'fulfilled' ? contractsRes.value : null
+  const funding = fundingRes.status === 'fulfilled' ? fundingRes.value : null
+  if (actorsRes.status === 'rejected') console.error('[market companies]', actorsRes.reason)
+  if (signalsRes.status === 'rejected') console.error('[market signals]', signalsRes.reason)
+  if (contractsRes.status === 'rejected') console.error('[market contracts]', contractsRes.reason)
+  if (fundingRes.status === 'rejected') console.error('[market funding]', fundingRes.reason)
+
+  setMarketCount('companies', actors ? actors.count : null)
+  setMarketCount('contracts', contracts ? contracts.count : null)
+  setMarketCount('funding', funding ? funding.count : null)
+  setMarketCount('signals', signals ? signals.count : null)
+
+  if (signals) {
+    mdState.signals = signals.data
+    setFreshness(signals.data)
+    renderMarketFilters()
+    renderMarketSignals()
+  } else {
+    const filters = document.getElementById('md-filters')
+    if (filters) filters.innerHTML = '<p class="cx-pending">Filters could not be loaded.</p>'
     signalsHost.innerHTML = '<p class="cx-pending">Signals could not be loaded.</p>'
   }
 
-  try {
-    const rows = await getMarketDiscoveryActors()
-    companiesHost.innerHTML = rows.length
-      ? rows.map(companyCard).join('')
-      : '<p class="cx-pending">No companies in market discovery.</p>'
-  } catch (e) {
-    console.error('[market companies]', e)
+  if (!actors) {
     companiesHost.innerHTML = '<p class="cx-pending">Companies could not be loaded.</p>'
+    return
   }
-
-  try {
-    const { contracts, funding } = await getMarketActivityRows()
-    const contractLatest = latestDated(contracts, 'awarded_date')
-    const fundingLatest = latestDated(funding, 'announced_date')
-    const known = knownAmountSummary(
-      [
-        ...contracts.map(r => ({ ...r, _date: r.awarded_date })),
-        ...funding.map(r => ({ ...r, _date: r.announced_date })),
-      ],
-      '_date'
-    )
-    activityHost.innerHTML = [
-      activityCard({
-        chip: 'C',
-        badge: 'Contracts',
-        value: String(contracts.length),
-        detail: 'Contract records',
-        date: contractLatest?.date,
-        url: contractLatest?.source_url,
-      }),
-      activityCard({
-        chip: 'F',
-        badge: 'Funding rounds',
-        value: String(funding.length),
-        detail: 'Funding round records',
-        date: fundingLatest?.date,
-        url: fundingLatest?.source_url,
-      }),
-      activityCard({
-        chip: 'Σ',
-        badge: 'Known amounts',
-        value: known.text,
-        detail: `${known.known} known amount${known.known === 1 ? '' : 's'}`,
-        date: known.latest?.date,
-        url: known.latest?.source_url,
-      }),
-    ].join('')
-  } catch (e) {
-    console.error('[market activity]', e)
-    activityHost.innerHTML = '<p class="cx-pending">Activity could not be loaded.</p>'
+  if (!actors.data.length) {
+    companiesHost.innerHTML = '<p class="cx-pending">No companies in market discovery.</p>'
+    return
   }
+  const eventsKnown = Boolean(contracts && funding && signals)
+  const counts = eventsKnown ? tallyActorEvents(contracts.data, funding.data, signals.data) : new Map()
+  companiesHost.innerHTML = actors.data.map(row => {
+    const count = counts.get(String(row.id)) || 0
+    return companyCard(row, count, eventsKnown)
+  }).join('')
 }
 
 // =====================================================================

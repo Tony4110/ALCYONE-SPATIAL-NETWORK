@@ -543,6 +543,55 @@
   .cx-powered a{color:var(--accent);font-weight:500;text-decoration:none;cursor:pointer}
   .cx-powered a:hover{color:var(--text)}
   .cx-back{display:inline-block;margin-bottom:8px}
+  #market .page-head h2{
+    font-size:clamp(32px,4.2vw,48px);line-height:1.08;letter-spacing:-.7px;max-width:14em;
+  }
+  #market .page-head .lead{max-width:40em;margin-top:12px;font-size:17px;line-height:1.5}
+  .md-fresh{margin-top:14px;font-family:var(--mono);font-size:12px;letter-spacing:.2px;color:var(--faint)}
+  .md-pulse{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:28px}
+  .md-stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px}
+  .md-stat-k{font-family:var(--mono);font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);line-height:1.35}
+  .md-stat-n{font-family:var(--serif);font-weight:500;font-size:clamp(40px,4.6vw,56px);letter-spacing:-1.5px;line-height:1;margin-top:12px}
+  .md-stat-n.is-up{color:var(--up)}
+  .md-filters{display:flex;flex-direction:column;gap:10px;margin-top:22px}
+  .md-filter-row{display:flex;flex-wrap:wrap;gap:8px}
+  .md-chip{
+    font-family:var(--mono);font-size:12px;letter-spacing:.2px;color:var(--muted);
+    background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;
+  }
+  .md-chip:hover{color:var(--text);border-color:var(--line-2)}
+  .md-chip.active{color:var(--text);background:var(--accent-soft);border-color:transparent}
+  .md-chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .md-block-title{font-family:var(--serif);font-weight:500;font-size:22px;letter-spacing:-.3px}
+  #market .cx-card{min-height:0}
+  #market .md-signal h3{font-size:21px;letter-spacing:-.3px}
+  #market .md-funding{--cx:var(--violet);--cx-soft:var(--violet-soft)}
+  #market .md-contract{--cx:var(--accent);--cx-soft:var(--accent-soft)}
+  #market .md-infrastructure{--cx:var(--gold);--cx-soft:rgba(232,182,90,.16)}
+  #market .md-partnership{--cx:var(--up);--cx-soft:rgba(61,214,140,.14)}
+  #market .md-other{--cx:var(--muted);--cx-soft:rgba(139,147,166,.16)}
+  [data-theme="light"] #market .md-infrastructure{--cx-soft:rgba(176,122,18,.14)}
+  [data-theme="light"] #market .md-partnership{--cx-soft:rgba(21,128,61,.12)}
+  #market .cx-chip svg{display:block}
+  .md-meta{
+    margin-top:auto;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;
+    font-family:var(--mono);font-size:11.5px;color:var(--muted);letter-spacing:.15px;
+  }
+  .md-meta .cx-cta{margin-top:0}
+  .md-meta .badge{font-size:10.5px}
+  .md-events{margin-top:auto;font-weight:600;font-size:13.5px;color:var(--accent)}
+  .md-digest-form{position:relative;display:flex;gap:8px;width:min(480px,100%);margin-top:4px}
+  .md-digest-form input{
+    flex:1;min-width:0;font-family:var(--sans);font-size:15px;color:var(--text);
+    background:var(--ink);border:1px solid var(--line-2);border-radius:9px;padding:10px 12px;outline:none;
+  }
+  .md-digest-form input:focus{border-color:var(--accent)}
+  .md-digest-form input::placeholder{color:var(--faint)}
+  .md-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  .cx-band .md-digest-note{max-width:36em;font-size:15px}
+  .cx-band .md-digest-note[data-state="ok"]{color:var(--up)}
+  .cx-band .md-digest-note[data-state="error"]{color:var(--down)}
+  [data-theme="light"] #market .md-digest .btn-primary{color:#fff}
   .actor-fiche{max-width:720px}
   .actor-fiche .lead{margin-top:14px;max-width:none}
   .actor-fiche .v-meta{margin-top:18px}
@@ -574,6 +623,9 @@
     .cx-section-h{flex-direction:column;align-items:flex-start}
     .cx-band{padding:24px 18px}
     .cx-card{min-height:0}
+    .md-pulse{grid-template-columns:1fr 1fr}
+    .md-digest-form{flex-direction:column;align-items:stretch}
+    .md-digest-form .btn{width:100%}
   }
 </style>
 </head>
@@ -959,29 +1011,56 @@
   <div class="wrap">
     <div class="page-head">
       <div class="kicker">Market discovery</div>
-      <h2>Market</h2>
-      <p class="lead" style="margin-top:12px">What changed, who is in the market, and the activity on record — each figure dated and sourced.</p>
+      <h2>What’s moving in the space economy</h2>
+      <p class="lead">Contracts, funding and signals — each one dated, sourced and linked to the company behind it.</p>
+      <p class="md-fresh" id="md-fresh">Updated weekly</p>
     </div>
 
-    <section class="cx-section">
-      <div class="cx-section-h"><div class="cx-label">// what changed</div></div>
+    <div class="md-pulse" id="md-pulse" aria-label="Market pulse">
+      <article class="md-stat">
+        <div class="md-stat-k">Companies tracked</div>
+        <div class="md-stat-n is-up" data-md-count="companies">—</div>
+      </article>
+      <article class="md-stat">
+        <div class="md-stat-k">Contracts</div>
+        <div class="md-stat-n" data-md-count="contracts">—</div>
+      </article>
+      <article class="md-stat">
+        <div class="md-stat-k">Funding rounds</div>
+        <div class="md-stat-n" data-md-count="funding">—</div>
+      </article>
+      <article class="md-stat">
+        <div class="md-stat-k">Market signals</div>
+        <div class="md-stat-n" data-md-count="signals">—</div>
+      </article>
+    </div>
+
+    <div class="md-filters" id="md-filters">
+      <p class="cx-pending">Loading filters…</p>
+    </div>
+
+    <section class="cx-section" aria-labelledby="md-changed-title">
+      <div class="cx-section-h"><h3 class="md-block-title" id="md-changed-title">What changed</h3></div>
       <div class="cx-grid" id="md-signals" aria-live="polite">
         <p class="cx-pending">Loading signals…</p>
       </div>
     </section>
 
-    <section class="cx-section">
-      <div class="cx-section-h"><div class="cx-label">// companies</div></div>
+    <section class="cx-section" aria-labelledby="md-companies-title">
+      <div class="cx-section-h"><h3 class="md-block-title" id="md-companies-title">Companies tracked</h3></div>
       <div class="cx-grid" id="md-companies" aria-live="polite">
         <p class="cx-pending">Loading companies…</p>
       </div>
     </section>
 
-    <section class="cx-section">
-      <div class="cx-section-h"><div class="cx-label">// market activity</div></div>
-      <div class="cx-grid" id="md-activity" aria-live="polite">
-        <p class="cx-pending">Loading activity…</p>
-      </div>
+    <section class="cx-band md-digest" aria-labelledby="md-digest-title">
+      <h2 id="md-digest-title">Get What Changed every Monday</h2>
+      <form class="md-digest-form" id="md-digest-form">
+        <label class="md-sr" for="md-digest-email">Email</label>
+        <input id="md-digest-email" name="email" type="email" required autocomplete="email" inputmode="email" placeholder="Email">
+        <button class="btn btn-primary" type="submit">Subscribe</button>
+      </form>
+      <p class="md-digest-note" id="md-digest-note" hidden></p>
     </section>
   </div>
 </section>
