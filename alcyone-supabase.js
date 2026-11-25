@@ -189,6 +189,38 @@ const STATUS_BADGE = {
   consolidation: ['Consolidation', 'b-cons'],
   early:         ['Early', 'b-exp'],
 }
+function spaceTrackByOperator(rows) {
+  const by = new Map()
+  for (const row of rows || []) {
+    if (row.source && row.source !== 'Space-Track') continue
+    const name = String(row.operator_name ?? '').trim()
+    const date = String(row.date ?? '').slice(0, 10)
+    const count = Number(row.active_satellites)
+    if (!name || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(count)) continue
+    if (!by.has(name)) by.set(name, [])
+    const list = by.get(name)
+    if (list.some(item => item.date === date)) continue
+    list.push({ date, count })
+  }
+  return by
+}
+
+function satelliteCell(readings) {
+  if (!readings || !readings.length) return '—'
+  const latest = readings[0].count
+  const text = Number(latest).toLocaleString('en-US')
+  if (readings.length < 2) return esc(text)
+  const delta = latest - readings[1].count
+  if (!Number.isFinite(delta)) return esc(text)
+  const cls = delta > 0 ? 'up' : delta < 0 ? 'down' : ''
+  const label = delta > 0
+    ? `+${delta.toLocaleString('en-US')}`
+    : delta < 0
+      ? `−${Math.abs(delta).toLocaleString('en-US')}`
+      : '0'
+  return `${esc(text)} <span class="sat-delta ${cls}">${esc(label)}</span>`
+}
+
 async function renderConstellations() {
   // trouve le panneau "Constellation Monitor" sans avoir à modifier le HTML
   const h3 = [...document.querySelectorAll('.panel-h h3')]
@@ -197,14 +229,28 @@ async function renderConstellations() {
   if (!table) return
   try {
     const rows = await getConstellations()
+    let history = new Map()
+    try {
+      const { data, error } = await supabase
+        .from('satellite_history')
+        .select('operator_name, active_satellites, date, source')
+        .eq('source', 'Space-Track')
+        .order('date', { ascending: false })
+      if (error) throw error
+      history = spaceTrackByOperator(data)
+    } catch (e) {
+      console.error('[constellation satellites]', e)
+    }
     const header = table.querySelector('tr')?.outerHTML ?? ''
     table.innerHTML = header + rows.map(o => {
       const [label, cls] = STATUS_BADGE[o.status] ?? ['—', 'b-stable']
       const stage = o.deployment_stage ?? o.orbit ?? ''        // colonnes additives optionnelles
+      const readings = history.get(String(o.name ?? '').trim())
       return `<tr>
         <td class="op">${esc(o.name)}</td>
         <td><span class="badge ${cls}">${esc(label)}</span></td>
         <td>${esc(stage)}</td>
+        <td>${satelliteCell(readings)}</td>
       </tr>`
     }).join('')
   } catch (e) {
