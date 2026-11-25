@@ -595,6 +595,26 @@
   .cx-band .md-digest-note[data-state="ok"]{color:var(--up)}
   .cx-band .md-digest-note[data-state="error"]{color:var(--down)}
   [data-theme="light"] #market .md-digest .btn-primary{color:#fff}
+  .ms-warn{
+    margin-top:18px;padding:12px 14px;border-radius:12px;
+    border:1px solid rgba(232,182,90,.5);background:rgba(232,182,90,.1);
+    color:var(--text);font-size:14.5px;line-height:1.45;
+  }
+  [data-theme="light"] .ms-warn{border-color:rgba(176,122,18,.45);background:rgba(176,122,18,.08)}
+  #mobile-satellite .page-head .lead{max-width:42em;margin-top:12px}
+  #mobile-satellite .cx-card{min-height:0}
+  #mobile-satellite .cx-card h3{font-size:20px}
+  #mobile-satellite .cx-card-top h3{flex:1;min-width:0}
+  .ms-status{font-family:var(--mono);font-size:10.5px;letter-spacing:.3px;padding:3px 8px;border-radius:6px;white-space:nowrap}
+  .ms-announced{color:var(--muted);background:rgba(139,147,166,.16)}
+  .ms-trial{color:var(--gold);background:rgba(232,182,90,.16)}
+  .ms-commercial{color:var(--up);background:rgba(61,214,140,.14)}
+  .ms-stopped{color:var(--down);background:rgba(255,107,107,.14)}
+  [data-theme="light"] .ms-trial{background:rgba(176,122,18,.14)}
+  [data-theme="light"] .ms-commercial{background:rgba(21,128,61,.12)}
+  [data-theme="light"] .ms-stopped{background:rgba(185,28,28,.1)}
+  .ms-dates{display:grid;gap:4px;font-size:13.5px;color:var(--text)}
+  .ms-dates span{display:inline-block;min-width:92px;font-family:var(--mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--faint)}
   .actor-fiche{max-width:720px}
   .actor-fiche .lead{margin-top:14px;max-width:none}
   .actor-fiche .v-meta{margin-top:18px}
@@ -641,8 +661,10 @@
       <div><b>Alcyone</b><small>SPACE INTELLIGENCE</small></div>
     </div>
     <div class="nav-links">
-      <a data-v="market" href="/?view=market" onclick="show('market');return false;">Market</a>
+      <a data-v="landing" href="/?view=index" onclick="show('landing');return false;">Index</a>
+      <a data-v="mobile-satellite" href="/?view=mobile-satellite" onclick="show('mobile-satellite');return false;">Mobile Satellite</a>
       <a data-v="connectivity" href="/?view=search" onclick="showConnectivity('search');return false;">Connectivity</a>
+      <a data-v="market" href="/?view=market" onclick="show('market');return false;">Market</a>
       <a data-v="guides" href="/?view=search#cx-guides" onclick="goSearch('cx-guides');return false;">Guides</a>
       <a class="nav-cta" data-v="assessment" href="/?view=assessment" onclick="show('assessment');return false;">Assessment</a>
     </div>
@@ -1068,6 +1090,32 @@
   </div>
 </section>
 
+<!-- ============ MOBILE SATELLITE ============ -->
+<section class="view" id="mobile-satellite">
+  <div class="wrap">
+    <div class="page-head">
+      <h2>Mobile Satellite</h2>
+      <p class="lead">Who connects your phone by satellite — which operator, which network, which country, and when.</p>
+      <div class="ms-warn" role="note">Announced ≠ commercially available. Each entry is dated and sourced.</div>
+    </div>
+    <div class="md-filters" id="ms-filters">
+      <p class="cx-pending">Loading filters…</p>
+    </div>
+    <section class="cx-section" aria-labelledby="ms-tracker-title">
+      <div class="cx-section-h"><h3 class="md-block-title" id="ms-tracker-title">D2D tracker</h3></div>
+      <div class="cx-grid" id="ms-tracker" aria-live="polite">
+        <p class="cx-pending">Loading partnerships…</p>
+      </div>
+    </section>
+    <section class="cx-section" aria-labelledby="ms-changed-title">
+      <div class="cx-section-h"><h3 class="md-block-title" id="ms-changed-title">What changed</h3></div>
+      <div class="cx-grid" id="ms-signals" aria-live="polite">
+        <p class="cx-pending">Loading signals…</p>
+      </div>
+    </section>
+  </div>
+</section>
+
 <!-- ============ SPACE MARKET (operators) ============ -->
 <section class="view" id="space-market">
   <div class="wrap">
@@ -1436,6 +1484,7 @@
       const id = map[requested] || requested;
       const el = id && document.getElementById(id);
       if (el && el.classList.contains('view') && id !== 'landing') show(id);
+      else if (!requested || id === 'landing') applyNav('landing');
     }
     if (requested !== 'assessment' || !document.getElementById('assessment')) return;
     const sector = q.get('sector');

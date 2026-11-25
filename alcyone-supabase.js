@@ -1224,6 +1224,180 @@ async function renderMarketDiscovery() {
 }
 
 // =====================================================================
+// MOBILE SATELLITE — D2D tracker
+// =====================================================================
+const MS_STATUS_ORDER = ['announced', 'trial', 'commercial', 'suspended', 'discontinued']
+const msState = { status: 'all', market: 'all', rows: [] }
+let msFiltersBound = false
+
+function msProviderName(actor) {
+  if (!actor) return '—'
+  if (String(actor.slug || '').toLowerCase() === 'spacex') return 'Starlink'
+  return actor.name || '—'
+}
+
+function msStatus(value) {
+  const key = String(value || '').trim().toLowerCase()
+  if (key === 'announced') return { cls: 'ms-announced', label: 'Announced' }
+  if (key === 'trial') return { cls: 'ms-trial', label: 'Trial' }
+  if (key === 'commercial') return { cls: 'ms-commercial', label: 'Commercial' }
+  if (key === 'suspended' || key === 'discontinued') return { cls: 'ms-stopped', label: labelize(key) }
+  return { cls: 'ms-announced', label: key ? labelize(key) : '—' }
+}
+
+function msDateLine(label, value) {
+  return `<div><span>${esc(label)}</span>${esc(value ? formatEventDate(value) : '—')}</div>`
+}
+
+function msCard(row) {
+  const status = msStatus(row.status)
+  const operator = row.mno?.name || '—'
+  const provider = msProviderName(row.provider)
+  const tech = [row.technology, row.service_type].filter(Boolean).join(' · ')
+  const href = safeHttpUrl(row.source_url)
+  return `<article class="cx-card cx-providers">
+    <div class="cx-card-top">
+      <h3>${esc(operator)} × ${esc(provider)}</h3>
+      <span class="ms-status ${status.cls}">${esc(status.label)}</span>
+    </div>
+    <p class="cx-meta">${esc(row.market || '—')}</p>
+    ${tech ? `<p class="md-sum">${esc(tech)}</p>` : ''}
+    <div class="ms-dates">
+      ${msDateLine('Announced', row.announced_date)}
+      ${msDateLine('Planned', row.planned_launch)}
+      ${msDateLine('Commercial', row.commercial_launch)}
+    </div>
+    <p class="cx-meta">Verified ${esc(row.last_verified ? formatEventDate(row.last_verified) : '—')}</p>
+    ${href ? `<a class="cx-cta" href="${esc(href)}" target="_blank" rel="noopener noreferrer">Source →</a>` : ''}
+  </article>`
+}
+
+function msFiltered() {
+  return msState.rows.filter(row => {
+    const statusOk = msState.status === 'all' || String(row.status || '').toLowerCase() === msState.status
+    const marketOk = msState.market === 'all' || String(row.market || '') === msState.market
+    return statusOk && marketOk
+  })
+}
+
+function msChip(kind, value, label) {
+  const active = msState[kind] === value
+  return `<button type="button" class="md-chip${active ? ' active' : ''}" data-ms-filter="${kind}" data-ms-value="${esc(value)}" aria-pressed="${active ? 'true' : 'false'}">${esc(label)}</button>`
+}
+
+function renderMsFilters() {
+  const host = document.getElementById('ms-filters')
+  if (!host) return
+  const statuses = []
+  const seenStatus = new Set()
+  for (const key of MS_STATUS_ORDER) {
+    if (msState.rows.some(row => String(row.status || '').toLowerCase() === key)) {
+      statuses.push(key)
+      seenStatus.add(key)
+    }
+  }
+  for (const row of msState.rows) {
+    const key = String(row.status || '').toLowerCase()
+    if (key && !seenStatus.has(key)) {
+      statuses.push(key)
+      seenStatus.add(key)
+    }
+  }
+  const markets = [...new Set(msState.rows.map(row => String(row.market || '').trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b))
+  host.innerHTML = `<div class="md-filter-row" role="group" aria-label="Status">${[msChip('status', 'all', 'All')].concat(statuses.map(key => msChip('status', key, msStatus(key).label))).join('')}</div>
+    <div class="md-filter-row" role="group" aria-label="Market">${[msChip('market', 'all', 'All')].concat(markets.map(market => msChip('market', market, market))).join('')}</div>`
+}
+
+function renderMsTracker() {
+  const host = document.getElementById('ms-tracker')
+  if (!host) return
+  if (!msState.rows.length) {
+    host.innerHTML = '<p class="cx-pending">No D2D partnerships dated yet.</p>'
+    return
+  }
+  const rows = msFiltered()
+  host.innerHTML = rows.length
+    ? rows.map(msCard).join('')
+    : '<p class="cx-pending">Nothing matches these filters.</p>'
+}
+
+function isMobileSatelliteSignal(row) {
+  const text = `${row.title || ''} ${row.summary || ''} ${row.market || ''}`.toLowerCase()
+  const aboutD2d = /\bd2d\b|direct-to-device|direct to device|direct-to-cell|direct to cell|mobile satellite|\bmss\b/.test(text)
+  return aboutD2d && String(row.market || '').toLowerCase() === 'connectivity'
+}
+
+function bindMsFilters() {
+  if (msFiltersBound) return
+  const host = document.getElementById('ms-filters')
+  if (!host) return
+  msFiltersBound = true
+  host.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-ms-filter]')
+    if (!button) return
+    const kind = button.dataset.msFilter
+    const value = button.dataset.msValue
+    if ((kind !== 'status' && kind !== 'market') || !value || msState[kind] === value) return
+    msState[kind] = value
+    renderMsFilters()
+    renderMsTracker()
+  })
+}
+
+async function renderMobileSatellite() {
+  const tracker = document.getElementById('ms-tracker')
+  const signalsHost = document.getElementById('ms-signals')
+  if (!tracker || !signalsHost) return
+  bindMsFilters()
+
+  try {
+    const { data, error } = await supabase
+      .from('d2d_partnerships')
+      .select('id, mno_id, provider_id, market, technology, service_type, status, announced_date, planned_launch, commercial_launch, source_url, last_verified')
+      .order('announced_date', { ascending: false, nullsFirst: false })
+    if (error) throw error
+    const parts = data ?? []
+    const ids = [...new Set(parts.flatMap(row => [row.mno_id, row.provider_id]).filter(Boolean))]
+    let actors = []
+    if (ids.length) {
+      const actorRes = await supabase.from('actors').select('id, name, slug').in('id', ids)
+      if (actorRes.error) throw actorRes.error
+      actors = actorRes.data ?? []
+    }
+    const byId = new Map(actors.map(actor => [String(actor.id), actor]))
+    msState.rows = parts.map(row => ({
+      ...row,
+      mno: byId.get(String(row.mno_id)) || null,
+      provider: byId.get(String(row.provider_id)) || null,
+    }))
+    renderMsFilters()
+    renderMsTracker()
+  } catch (e) {
+    console.error('[mobile satellite]', e)
+    tracker.innerHTML = '<p class="cx-pending">Partnerships could not be loaded.</p>'
+    const filters = document.getElementById('ms-filters')
+    if (filters) filters.innerHTML = '<p class="cx-pending">Filters could not be loaded.</p>'
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('market_signals')
+      .select('signal_type, title, summary, event_date, source_url, confidence, market')
+      .eq('market', 'connectivity')
+      .order('event_date', { ascending: false, nullsFirst: false })
+    if (error) throw error
+    const rows = (data ?? []).filter(isMobileSatelliteSignal)
+    signalsHost.innerHTML = rows.length
+      ? rows.map(signalCard).join('')
+      : '<p class="cx-pending">No D2D signals dated yet.</p>'
+  } catch (e) {
+    console.error('[mobile satellite signals]', e)
+    signalsHost.innerHTML = '<p class="cx-pending">Signals could not be loaded.</p>'
+  }
+}
+
+// =====================================================================
 // INIT
 // =====================================================================
 document.addEventListener('DOMContentLoaded', () => {
@@ -1237,6 +1411,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderFeaturedProviders()
   renderMarketplace()
   renderMarketDiscovery()
+  renderMobileSatellite()
   if (new URLSearchParams(location.search).get('actor')) renderActorFiche()
   bindAssessment()
 })
