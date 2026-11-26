@@ -1225,9 +1225,9 @@ async function renderMarketDiscovery() {
 
 // =====================================================================
 // MOBILE SATELLITE — router, compare, radar, signals
-// Radar reuses d2d_partnerships. partnership_status falls back to status
-// (same meaning, current column). commercial_availability stays blank
-// until that column exists. Signals prefer is_d2d = true.
+// Radar reads d2d_partnerships. Status uses partnership_status, or status
+// when that column is absent. Availability is commercial_availability only.
+// Signals are market_signals where is_d2d = true.
 // =====================================================================
 const MS_RANK = { commercial: 0, trial: 1, announced: 2 }
 let msRouterBound = false
@@ -1305,12 +1305,6 @@ function msRadarRow(row) {
 
 function msEmptyRow(message) {
   return `<tr><td class="ms-empty" colspan="6">${esc(message)}</td></tr>`
-}
-
-function isMobileSatelliteSignal(row) {
-  const text = `${row.title || ''} ${row.summary || ''} ${row.market || ''}`.toLowerCase()
-  const aboutD2d = /\bd2d\b|direct-to-device|direct to device|direct-to-cell|direct to cell|mobile satellite|\bmss\b/.test(text)
-  return aboutD2d && String(row.market || '').toLowerCase() === 'connectivity'
 }
 
 function msSignalCard(row) {
@@ -1399,30 +1393,20 @@ async function renderMsRadar(host) {
 
 async function renderMsSignals(host) {
   try {
-    let res = await supabase
+    const { data, error } = await supabase
       .from('market_signals')
       .select('signal_type, title, summary, event_date, source_url, confidence, market, is_d2d')
       .eq('is_d2d', true)
       .order('event_date', { ascending: false, nullsFirst: false })
-    let rows
-    if (res.error && msMissingColumn(res.error)) {
-      res = await supabase
-        .from('market_signals')
-        .select('signal_type, title, summary, event_date, source_url, confidence, market')
-        .eq('market', 'connectivity')
-        .order('event_date', { ascending: false, nullsFirst: false })
-      if (res.error) throw res.error
-      rows = (res.data ?? []).filter(isMobileSatelliteSignal)
-    } else {
-      if (res.error) throw res.error
-      rows = res.data ?? []
-    }
+    if (error) throw error
+    const rows = data ?? []
     host.innerHTML = rows.length
       ? rows.map(msSignalCard).join('')
       : '<p class="ms-empty">No D2D signals yet.</p>'
   } catch (e) {
     console.error('[mobile satellite signals]', e)
-    host.innerHTML = `<p class="ms-empty">${esc(msMissingRelation(e) ? 'No D2D signals yet.' : 'Signals could not be loaded.')}</p>`
+    const quiet = msMissingRelation(e) || msMissingColumn(e)
+    host.innerHTML = `<p class="ms-empty">${esc(quiet ? 'No D2D signals yet.' : 'Signals could not be loaded.')}</p>`
   }
 }
 
