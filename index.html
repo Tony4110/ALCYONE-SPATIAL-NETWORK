@@ -595,26 +595,181 @@
   .cx-band .md-digest-note[data-state="ok"]{color:var(--up)}
   .cx-band .md-digest-note[data-state="error"]{color:var(--down)}
   [data-theme="light"] #market .md-digest .btn-primary{color:#fff}
-  .ms-warn{
-    margin-top:18px;padding:12px 14px;border-radius:12px;
-    border:1px solid rgba(232,182,90,.5);background:rgba(232,182,90,.1);
-    color:var(--text);font-size:14.5px;line-height:1.45;
+  /* Mobile Satellite — scoped tokens. Dark uses the brief exactly; light keeps the same hues readable. */
+  #mobile-satellite{
+    --ms-accent:#35d0c7;
+    --ms-card:#121825;
+    --ms-line:#1f293b;
+    --ms-radius:14px;
+    padding-bottom:12px;
   }
-  [data-theme="light"] .ms-warn{border-color:rgba(176,122,18,.45);background:rgba(176,122,18,.08)}
-  #mobile-satellite .page-head .lead{max-width:42em;margin-top:12px}
-  #mobile-satellite .cx-card{min-height:0}
-  #mobile-satellite .cx-card h3{font-size:20px}
-  #mobile-satellite .cx-card-top h3{flex:1;min-width:0}
-  .ms-status{font-family:var(--mono);font-size:10.5px;letter-spacing:.3px;padding:3px 8px;border-radius:6px;white-space:nowrap}
-  .ms-announced{color:var(--muted);background:rgba(139,147,166,.16)}
-  .ms-trial{color:var(--gold);background:rgba(232,182,90,.16)}
-  .ms-commercial{color:var(--up);background:rgba(61,214,140,.14)}
-  .ms-stopped{color:var(--down);background:rgba(255,107,107,.14)}
-  [data-theme="light"] .ms-trial{background:rgba(176,122,18,.14)}
-  [data-theme="light"] .ms-commercial{background:rgba(21,128,61,.12)}
-  [data-theme="light"] .ms-stopped{background:rgba(185,28,28,.1)}
-  .ms-dates{display:grid;gap:4px;font-size:13.5px;color:var(--text)}
-  .ms-dates span{display:inline-block;min-width:92px;font-family:var(--mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--faint)}
+  [data-theme="light"] #mobile-satellite{
+    --ms-accent:#0c7f78;
+    --ms-card:#ffffff;
+    --ms-line:#e2e8f0;
+  }
+  #mobile-satellite .ms-block{padding:46px 0 4px}
+  #mobile-satellite .ms-kicker{
+    font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;
+    color:var(--ms-accent);margin-bottom:10px;
+  }
+  #mobile-satellite .ms-block h2{
+    font-family:var(--serif);font-weight:500;font-size:clamp(28px,3.6vw,40px);
+    letter-spacing:-.6px;line-height:1.12;max-width:18em;
+  }
+  #mobile-satellite .ms-lead{margin-top:12px;max-width:44em;color:var(--muted);font-size:16.5px;line-height:1.5}
+  #mobile-satellite .ms-frame{
+    margin-top:22px;background:var(--ms-card);border:1px solid var(--ms-line);
+    border-radius:var(--ms-radius);padding:18px 18px 16px;
+  }
+  #mobile-satellite .ms-fields{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  #mobile-satellite .ms-fields label{
+    display:grid;gap:6px;font-family:var(--mono);font-size:10.5px;letter-spacing:1.1px;
+    text-transform:uppercase;color:var(--faint);
+  }
+  #mobile-satellite .ms-fields select{
+    font-family:var(--sans);font-size:15px;font-weight:500;color:var(--text);
+    background:var(--ink);border:1px solid var(--ms-line);border-radius:10px;
+    padding:11px 12px;width:100%;color-scheme:dark;cursor:pointer;
+  }
+  [data-theme="light"] #mobile-satellite .ms-fields select{color-scheme:light}
+  #mobile-satellite .ms-fields select:focus{outline:none;border-color:var(--ms-accent)}
+  #mobile-satellite .ms-need{margin-top:16px}
+  #mobile-satellite .ms-need-label{
+    display:block;margin-bottom:8px;font-family:var(--mono);font-size:10.5px;
+    letter-spacing:1.1px;text-transform:uppercase;color:var(--faint);
+  }
+  #mobile-satellite .ms-chips{display:flex;flex-wrap:wrap;gap:8px}
+  #mobile-satellite .ms-chip{
+    font-family:var(--sans);font-size:13.5px;color:var(--muted);background:transparent;
+    border:1px solid var(--ms-line);border-radius:999px;padding:7px 12px;cursor:pointer;
+  }
+  #mobile-satellite .ms-chip:hover{color:var(--text);border-color:var(--ms-accent)}
+  #mobile-satellite .ms-chip[aria-pressed="true"]{
+    color:#04221f;background:#35d0c7;border-color:transparent;font-weight:600;
+  }
+  #mobile-satellite .ms-chip:focus-visible{outline:2px solid var(--ms-accent);outline-offset:2px}
+  #mobile-satellite .ms-tiers{display:grid;gap:10px;margin-top:18px}
+  #mobile-satellite .ms-tier{
+    display:grid;grid-template-columns:auto 1fr;gap:8px 14px;align-items:start;
+    padding:12px;border-radius:12px;background:rgba(255,255,255,.025);
+  }
+  [data-theme="light"] #mobile-satellite .ms-tier{background:rgba(15,23,42,.03)}
+  #mobile-satellite .ms-tier h3{font-family:var(--serif);font-weight:500;font-size:17px;letter-spacing:-.2px}
+  #mobile-satellite .ms-tier p{color:var(--muted);font-size:14px;line-height:1.45;margin-top:3px}
+  #mobile-satellite .ms-alert{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:16px}
+  #mobile-satellite .ms-alert label{flex:1;min-width:min(100%,240px);display:grid;gap:6px;font-size:14.5px;color:var(--text)}
+  #mobile-satellite .ms-alert input{
+    font-family:var(--sans);font-size:15px;color:var(--text);background:var(--ink);
+    border:1px solid var(--ms-line);border-radius:10px;padding:10px 12px;width:100%;outline:none;
+  }
+  #mobile-satellite .ms-alert input:focus{border-color:var(--ms-accent)}
+  #mobile-satellite .ms-alert input::placeholder{color:var(--faint)}
+  #mobile-satellite .btn-primary{
+    background:#35d0c7;color:#04221f;
+    box-shadow:0 0 0 1px rgba(53,208,199,.45),0 8px 24px -8px rgba(53,208,199,.55);
+  }
+  #mobile-satellite .btn-primary:hover{
+    box-shadow:0 0 0 1px rgba(53,208,199,.6),0 12px 30px -8px rgba(53,208,199,.65);
+  }
+  [data-theme="light"] #mobile-satellite .btn-primary{color:#04221f}
+  #mobile-satellite .ms-alert-note{margin-top:8px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+  #mobile-satellite .ms-alert-note[data-state="ok"]{color:#36d399}
+  #mobile-satellite .ms-alert-note[data-state="error"]{color:var(--down)}
+  [data-theme="light"] #mobile-satellite .ms-alert-note[data-state="ok"]{color:#0e9f6e}
+  #mobile-satellite .ms-honesty{
+    margin:14px auto 0;max-width:46em;text-align:center;color:var(--faint);font-size:13px;line-height:1.5;
+  }
+  #mobile-satellite .ms-disclaimer{
+    margin-top:10px;text-align:center;color:var(--faint);font-family:var(--mono);font-size:11.5px;letter-spacing:.15px;
+  }
+  #mobile-satellite .ms-compare{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:20px}
+  #mobile-satellite .ms-card{
+    background:var(--ms-card);border:1px solid var(--ms-line);border-radius:var(--ms-radius);
+    padding:16px;display:flex;flex-direction:column;gap:0;min-width:0;
+  }
+  #mobile-satellite .ms-card-k{
+    font-family:var(--mono);font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--ms-accent);
+  }
+  #mobile-satellite .ms-card h3{font-family:var(--serif);font-weight:500;font-size:20px;letter-spacing:-.3px;margin-top:6px}
+  #mobile-satellite .ms-sol{display:flex;flex-direction:column;align-items:flex-start;gap:4px;margin-top:14px;padding-top:12px;border-top:1px solid var(--ms-line)}
+  #mobile-satellite .ms-sol strong{font-size:14.5px;font-weight:600}
+  #mobile-satellite .ms-sol p{color:var(--muted);font-size:13.5px;line-height:1.4}
+  #mobile-satellite .ms-badge{
+    display:inline-block;width:max-content;max-width:100%;justify-self:start;
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.3px;
+    padding:3px 8px;border-radius:6px;white-space:nowrap;line-height:1.4;
+  }
+  #mobile-satellite .ms-b-available{color:#36d399;background:rgba(54,211,153,.14)}
+  #mobile-satellite .ms-b-limited{color:#f28e4e;background:rgba(242,142,78,.16)}
+  #mobile-satellite .ms-b-coming{color:#5b8cff;background:rgba(91,140,255,.16)}
+  #mobile-satellite .ms-b-na{color:#8b93a6;background:rgba(139,147,166,.16)}
+  [data-theme="light"] #mobile-satellite .ms-b-available{color:#0e9f6e;background:rgba(14,159,110,.12)}
+  [data-theme="light"] #mobile-satellite .ms-b-limited{color:#c2410c;background:rgba(242,142,78,.16)}
+  [data-theme="light"] #mobile-satellite .ms-b-coming{color:#315dcc;background:rgba(91,140,255,.14)}
+  [data-theme="light"] #mobile-satellite .ms-b-na{color:#64748b;background:rgba(100,116,139,.12)}
+  #mobile-satellite .ms-table-wrap{
+    margin-top:18px;background:var(--ms-card);border:1px solid var(--ms-line);
+    border-radius:var(--ms-radius);overflow:auto;
+  }
+  #mobile-satellite .ms-table{width:100%;border-collapse:collapse;min-width:760px}
+  #mobile-satellite .ms-table th{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.8px;text-transform:uppercase;
+    color:var(--faint);text-align:left;padding:14px;font-weight:500;border-bottom:1px solid var(--ms-line);
+  }
+  #mobile-satellite .ms-table td{padding:14px;border-top:1px solid var(--ms-line);font-size:14.5px;vertical-align:middle}
+  #mobile-satellite .ms-table tbody tr:first-child td{border-top:none}
+  #mobile-satellite .ms-op{font-weight:600}
+  #mobile-satellite .ms-verified{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+  #mobile-satellite .ms-src{color:var(--ms-accent);font-weight:600;font-size:13.5px;text-decoration:none;white-space:nowrap}
+  #mobile-satellite .ms-src:hover{color:var(--text)}
+  #mobile-satellite .ms-empty{color:var(--muted);font-size:14.5px}
+  #mobile-satellite .ms-signals{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:18px}
+  #mobile-satellite .ms-signal{padding:16px;gap:8px}
+  #mobile-satellite .ms-signal h3{margin-top:0;font-size:18px}
+  #mobile-satellite .ms-sum{color:var(--muted);font-size:14px;line-height:1.5}
+  #mobile-satellite .ms-meta{
+    margin-top:auto;padding-top:8px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;
+    font-family:var(--mono);font-size:11.5px;color:var(--muted);
+  }
+  #mobile-satellite .ms-conf{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.3px;color:var(--muted);
+    border:1px solid var(--ms-line);border-radius:6px;padding:2px 7px;
+  }
+  #mobile-satellite .ms-teaser{
+    margin-top:16px;background:var(--ms-card);border:1px solid var(--ms-line);
+    border-radius:var(--ms-radius);padding:18px;
+  }
+  #mobile-satellite .ms-teaser-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  #mobile-satellite .ms-teaser h3{font-family:var(--serif);font-weight:500;font-size:20px;letter-spacing:-.3px}
+  #mobile-satellite .ms-teaser p{margin-top:8px;color:var(--muted);font-size:14.5px;line-height:1.5;max-width:48em}
+  #mobile-satellite .ms-foot{
+    margin-top:36px;padding-top:20px;border-top:1px solid var(--ms-line);
+    display:flex;flex-wrap:wrap;gap:10px 22px;
+  }
+  #mobile-satellite .ms-foot a{color:var(--ms-accent);font-weight:600;font-size:15px;text-decoration:none}
+  #mobile-satellite .ms-foot a:hover{color:var(--text)}
+  #mobile-satellite .ms-indep{margin-top:14px;font-style:italic;color:var(--muted);font-size:13.5px;line-height:1.5;max-width:46em}
+  @media(max-width:800px){
+    #mobile-satellite .ms-fields,#mobile-satellite .ms-compare{grid-template-columns:1fr}
+    #mobile-satellite .ms-tier{grid-template-columns:1fr}
+    #mobile-satellite .ms-alert{flex-direction:column;align-items:stretch}
+    #mobile-satellite .ms-alert .btn{width:100%}
+    #mobile-satellite .ms-table{min-width:0}
+    #mobile-satellite .ms-table thead{display:none}
+    #mobile-satellite .ms-table,
+    #mobile-satellite .ms-table tbody,
+    #mobile-satellite .ms-table tr,
+    #mobile-satellite .ms-table td{display:block;width:100%}
+    #mobile-satellite .ms-table tr{border-top:1px solid var(--ms-line);padding:6px 14px 12px}
+    #mobile-satellite .ms-table tbody tr:first-child{border-top:none}
+    #mobile-satellite .ms-table td{border:none;padding:7px 0}
+    #mobile-satellite .ms-table td::before{
+      content:attr(data-label);display:block;margin-bottom:2px;
+      font-family:var(--mono);font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--faint);
+    }
+    #mobile-satellite .ms-table td.ms-empty::before{content:none}
+  }
   .actor-fiche{max-width:720px}
   .actor-fiche .lead{margin-top:14px;max-width:none}
   .actor-fiche .v-meta{margin-top:18px}
@@ -1093,26 +1248,177 @@
 <!-- ============ MOBILE SATELLITE ============ -->
 <section class="view" id="mobile-satellite">
   <div class="wrap">
-    <div class="page-head">
-      <h2>Mobile Satellite</h2>
-      <p class="lead">Who connects your phone by satellite — which operator, which network, which country, and when.</p>
-      <div class="ms-warn" role="note">Announced ≠ commercially available. Each entry is dated and sourced.</div>
-    </div>
-    <div class="md-filters" id="ms-filters">
-      <p class="cx-pending">Loading filters…</p>
-    </div>
-    <section class="cx-section" aria-labelledby="ms-tracker-title">
-      <div class="cx-section-h"><h3 class="md-block-title" id="ms-tracker-title">D2D tracker</h3></div>
-      <div class="cx-grid" id="ms-tracker" aria-live="polite">
-        <p class="cx-pending">Loading partnerships…</p>
+    <section class="ms-block" aria-labelledby="ms-router-title">
+      <p class="ms-kicker">01 · Router</p>
+      <h2 id="ms-router-title">Find your satellite connection</h2>
+      <p class="ms-lead">Country, operator, phone and need — the verified options available today, with the honest limits. For travellers and nomads, and for telcos testing a market.</p>
+      <div class="ms-frame">
+        <div class="ms-fields">
+          <label>Country
+            <select name="country" aria-label="Country">
+              <option>France</option>
+              <option selected>Germany</option>
+              <option>Italy</option>
+              <option>Spain</option>
+              <option>United Kingdom</option>
+              <option>United States</option>
+            </select>
+          </label>
+          <label>Mobile operator
+            <select name="operator" aria-label="Mobile operator">
+              <option selected>Deutsche Telekom</option>
+              <option>Orange</option>
+              <option>Telefónica</option>
+              <option>T-Mobile US</option>
+              <option>Vodafone</option>
+            </select>
+          </label>
+          <label>Smartphone
+            <select name="phone" aria-label="Smartphone">
+              <option>iPhone 14</option>
+              <option selected>iPhone 15</option>
+              <option>iPhone 16</option>
+              <option>Pixel 9</option>
+              <option>Samsung Galaxy S24</option>
+            </select>
+          </label>
+        </div>
+        <div class="ms-need">
+          <span class="ms-need-label" id="ms-need-label">What do you need?</span>
+          <div class="ms-chips" id="ms-needs" role="group" aria-labelledby="ms-need-label">
+            <button type="button" class="ms-chip" data-need="emergency" aria-pressed="false">Emergency &amp; messaging</button>
+            <button type="button" class="ms-chip" data-need="sms" aria-pressed="true">SMS &amp; voice</button>
+            <button type="button" class="ms-chip" data-need="data" aria-pressed="false">Internet &amp; data</button>
+            <button type="button" class="ms-chip" data-need="full" aria-pressed="false">Full connectivity</button>
+          </div>
+        </div>
+        <div class="ms-tiers" aria-live="polite">
+          <article class="ms-tier">
+            <span class="ms-badge ms-b-available">Available now</span>
+            <div>
+              <h3>Apple Emergency SOS</h3>
+              <p>Built into your iPhone, free. Emergencies and short messaging — not calls or data.</p>
+            </div>
+          </article>
+          <article class="ms-tier">
+            <span class="ms-badge ms-b-limited">Limited</span>
+            <div>
+              <h3>Starlink Mini</h3>
+              <p>Real internet off-grid. A portable dish, not phone-direct — needs the device and a plan.</p>
+            </div>
+          </article>
+          <article class="ms-tier">
+            <span class="ms-badge ms-b-coming">Coming soon</span>
+            <div>
+              <h3>Deutsche Telekom × SpaceX</h3>
+              <p>Announced for 2026. Not available to consumers yet, and no promised date.</p>
+            </div>
+          </article>
+        </div>
+        <form class="ms-alert" id="ms-alert-form" novalidate>
+          <label>
+            <span>🔔 Alert me when it's live</span>
+            <input type="email" name="email" autocomplete="email" inputmode="email" placeholder="Email" aria-label="Email for a launch alert">
+          </label>
+          <button class="btn btn-primary" type="submit">Notify me</button>
+        </form>
+        <p class="ms-alert-note" id="ms-alert-note" hidden></p>
+        <p class="ms-honesty">⚠️ A signed deal ≠ a usable service. We track status and real availability separately, and only route you to what works today.</p>
+      </div>
+      <p class="ms-disclaimer">Illustrative interface — not yet connected to a verified live-availability database.</p>
+    </section>
+
+    <section class="ms-block" aria-labelledby="ms-compare-title">
+      <p class="ms-kicker">02 · Compare</p>
+      <h2 id="ms-compare-title">Compare — what you can actually use</h2>
+      <div class="ms-compare">
+        <article class="ms-card">
+          <p class="ms-card-k">A</p>
+          <h3>Native smartphone</h3>
+          <div class="ms-sol">
+            <strong>Apple Emergency SOS</strong>
+            <p>iPhone 14+ · Globalstar</p>
+            <span class="ms-badge ms-b-limited">Limited</span>
+          </div>
+          <div class="ms-sol">
+            <strong>Android Snapdragon / Pixel</strong>
+            <p>Emergency</p>
+            <span class="ms-badge ms-b-limited">Limited</span>
+          </div>
+        </article>
+        <article class="ms-card">
+          <p class="ms-card-k">B</p>
+          <h3>Carrier D2D / NTN</h3>
+          <div class="ms-sol">
+            <strong>T-Mobile T-Satellite</strong>
+            <p>US · Starlink · SMS</p>
+            <span class="ms-badge ms-b-available">Available</span>
+          </div>
+          <div class="ms-sol">
+            <strong>Europe · DT / Orange / Vodafone</strong>
+            <p>Trials</p>
+            <span class="ms-badge ms-b-coming">Coming</span>
+          </div>
+        </article>
+        <article class="ms-card">
+          <p class="ms-card-k">C</p>
+          <h3>Dedicated terminal</h3>
+          <div class="ms-sol">
+            <strong>Starlink Mini</strong>
+            <p>Portable dish</p>
+            <span class="ms-badge ms-b-available">Available</span>
+          </div>
+          <div class="ms-sol">
+            <strong>Iridium / Thuraya</strong>
+            <p>Sat phones</p>
+            <span class="ms-badge ms-b-available">Available</span>
+          </div>
+        </article>
       </div>
     </section>
-    <section class="cx-section" aria-labelledby="ms-changed-title">
-      <div class="cx-section-h"><h3 class="md-block-title" id="ms-changed-title">What changed</h3></div>
-      <div class="cx-grid" id="ms-signals" aria-live="polite">
-        <p class="cx-pending">Loading signals…</p>
+
+    <section class="ms-block" aria-labelledby="ms-radar-title">
+      <p class="ms-kicker">03 · Radar</p>
+      <h2 id="ms-radar-title">Radar — the market in real time</h2>
+      <div class="ms-table-wrap">
+        <table class="ms-table">
+          <thead>
+            <tr>
+              <th scope="col">Operator × Provider</th>
+              <th scope="col">Region</th>
+              <th scope="col">Status</th>
+              <th scope="col">Availability</th>
+              <th scope="col">Verified</th>
+              <th scope="col">Source</th>
+            </tr>
+          </thead>
+          <tbody id="ms-radar" aria-live="polite">
+            <tr><td class="ms-empty" colspan="6">Loading partnerships…</td></tr>
+          </tbody>
+        </table>
       </div>
     </section>
+
+    <section class="ms-block" aria-labelledby="ms-signals-title">
+      <p class="ms-kicker">04 · Signals</p>
+      <h2 id="ms-signals-title">Signals — what changed</h2>
+      <div class="ms-signals" id="ms-signals" aria-live="polite">
+        <p class="ms-empty">Loading signals…</p>
+      </div>
+      <aside class="ms-teaser" aria-label="Mobile Satellite Readiness Index">
+        <div class="ms-teaser-top">
+          <h3>Mobile Satellite Readiness Index — by country</h3>
+          <span class="ms-badge ms-b-coming">COMING</span>
+        </div>
+        <p>A country-by-country picture of what a phone can actually do by satellite — emergency, messaging, and data — kept separate from announcements. Descriptive only, until the reading is ready.</p>
+      </aside>
+    </section>
+
+    <nav class="ms-foot" aria-label="Continue">
+      <a href="/?view=search" onclick="showConnectivity('search');return false;">→ Connectivity (compare &amp; buy)</a>
+      <a href="/?view=assessment" onclick="show('assessment');return false;">→ Assessment (get a recommendation)</a>
+    </nav>
+    <p class="ms-indep">Alcyone is independent. Commercial partners never pay to change a ranking, a status or an availability.</p>
   </div>
 </section>
 
